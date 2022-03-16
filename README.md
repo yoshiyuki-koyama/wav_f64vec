@@ -35,7 +35,7 @@ fn main() {
     let mut wav_file = WavFile::new();
     wav_file.open(std::path::Path::new(r"./test.wav")).unwrap();
 
-    // make a track struct from the wave file sturct
+    // make a WavFormat struct and aidio data vector from the wave file sturct
     let (wave_format, mut channel_data_vec) = wav_file.get_channel_vec_audio().unwrap();
 
     // any process (example: print format & edit wave)
