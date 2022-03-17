@@ -1,5 +1,6 @@
-//! Reading & writing wav file, and converting wav audio data to `Vec<Vec<f64>>` with a wave format structure.
-//! The order of the audio data vector's dimensions can be specified by corresponding APIs in each.
+//! This libary provides the following features:
+//! * Reading & writing wav files.
+//! * Interconversion between wav audio data and a tupple that has a wave format structure and a audio data vector(`Vec<Vec<f64>>`). The order of the audio data vector's (`Vec<Vec<f64>>`) dimensions can be specified by corresponding APIs in each.
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::Path;
@@ -38,6 +39,7 @@ pub struct WaveFormat {
 }
 
 impl WaveFormat {
+    /// Check the format us supported.
     pub fn format_check(wave_format: &WaveFormat) -> Result<()> {
         if wave_format.channel < 1 || wave_format.channel > 2 {
             return Err(WavF64VecError::new(WavF64VecErrorKind::FormatIsNotSupported, Some("channel number".to_string())));
@@ -475,7 +477,7 @@ impl WavFile {
     }
 }
 
-/// Convert from bytes data slice to f64 wave data.
+/// Convert from a bytes data vector to a audio data value(`f64`).
 pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
     let bytes_len = bytes.len();
     
@@ -534,7 +536,7 @@ pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
     }
 }
 
-/// Convert from f64 wave data to bytes data vec.
+/// Convert from a audio data value(`f64`) to a bytes data vector .
 pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_vec: &mut Vec<u8>) -> Result<()> {
     match format_id {
         WAVEFORMAT_ID_PCM => {
