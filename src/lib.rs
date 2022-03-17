@@ -390,7 +390,7 @@ impl WavFile {
         let mut bytes_data_vec: Vec<u8> = Vec::new();
         for (data_idx, _) in channel_data_vec[0].iter().enumerate() {
             for channel_idx in 0..wave_format.channel {
-                f64wave_to_bytes(wave_format.id, channel_data_vec[channel_idx][data_idx], wave_format.bits / 8, &mut bytes_data_vec)?;
+                bytes_data_vec.append(&mut f64wave_to_bytes(wave_format.id, channel_data_vec[channel_idx][data_idx], wave_format.bits)?);
             }
         }
         self.update_audio(format_buf, bytes_data_vec)?;
@@ -404,7 +404,7 @@ impl WavFile {
         let mut bytes_data_vec: Vec<u8> = Vec::new();
         for (data_idx, _) in data_channel_vec.iter().enumerate() {
             for channel_idx in 0..wave_format.channel {
-                f64wave_to_bytes(wave_format.id, data_channel_vec[data_idx][channel_idx], wave_format.bits / 8, &mut bytes_data_vec)?;
+                bytes_data_vec.append(&mut f64wave_to_bytes(wave_format.id, data_channel_vec[data_idx][channel_idx], wave_format.bits)?);
             }
         }
         self.update_audio(format_buf, bytes_data_vec)?;
@@ -537,7 +537,8 @@ pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
 }
 
 /// Convert from a audio data value(`f64`) to a bytes data vector .
-pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_vec: &mut Vec<u8>) -> Result<()> {
+pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<Vec<u8>> {
+    let bytes_len = bits / 8;
     match format_id {
         WAVEFORMAT_ID_PCM => {
             // TODO: Max Value Check for each length
@@ -559,8 +560,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_ve
                 else {
                     buffer[0] -= 128;
                 }
-                dst_vec.push(buffer[0]);
-                Ok(())
+                Ok(buffer.to_vec())
             } else if bytes_len == 2 {
                 let i16_val: i16;
                 if f64_val < -1.0 {
@@ -573,10 +573,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_ve
     
                 let buffer: [u8; 2] = i16_val.to_le_bytes();
                 //signed 16bit
-                for byte_data in buffer {
-                    dst_vec.push(byte_data);
-                }
-                Ok(())
+                Ok(buffer.to_vec())
             } else if bytes_len == 3 {
                 let i32_val: i32;
                 if f64_val < -1.0 {
@@ -589,13 +586,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_ve
     
                 let buffer: [u8; 4] = i32_val.to_le_bytes();
                 //signed 24bit
-                for (idx,byte_data) in buffer.iter().enumerate() {
-                    if idx == 3 {
-                        break;
-                    }
-                    dst_vec.push(*byte_data);
-                }
-                Ok(())
+                Ok(buffer[0..3].to_vec())
             } else if bytes_len == 4 {
                 let i32_val: i32;
                 if f64_val < -1.0 {
@@ -608,10 +599,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_ve
     
                 let buffer: [u8; 4] = i32_val.to_le_bytes();
                 //signed 32bit
-                for byte_data in buffer {
-                    dst_vec.push(byte_data);
-                }
-                Ok(())
+                Ok(buffer.to_vec())
             } else {
                 Err(WavF64VecError::new(WavF64VecErrorKind::BytesLengthError, None))
             }
@@ -628,10 +616,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bytes_len: usize, dst_ve
                 }
                 let buffer: [u8; 4] = f32_val.to_le_bytes();
                 //32bit float
-                for byte_data in buffer {
-                    dst_vec.push(byte_data);
-                }
-                Ok(())
+                Ok(buffer.to_vec())
             } else {
                 Err(WavF64VecError::new(WavF64VecErrorKind::BytesLengthError, None))
             }
