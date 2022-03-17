@@ -1,23 +1,23 @@
 # wav_f64vec
-Reading & writing wav files, and Interconversion between wav audio data and `Vec<Vec<f64>>`.
+A library of reading & writing wav files, and interconversion between wav audio data and `Vec<Vec<f64>>`.
 
 ## Introduction
-Reading & writing wav files, and Interconversion between wav audio data and `Vec<Vec<f64>>` with a wave format structure.
-The order of the audio data vector's dimensions can be specified by corresponding APIs in each.
+This libary provides the following features:
+* Reading & writing wav files.
+* Interconversion between wav audio data and a tupple that has a wave format structure and a audio data vector(`Vec<Vec<f64>>`). The order of the audio data vector's (`Vec<Vec<f64>>`) dimensions can be specified by corresponding APIs in each.
 
 ## Wav File Format
 
-Format:
-Unsigned 8bit PCM
-Signed 16,24,32bit PCM
-32bit IEEE Float
+* Format:
+    * Unsigned 8bit PCM
+    * Signed 16,24,32bit PCM
+    * 32bit IEEE Float
 
-Channel:
-Mono or Stereo
+* Channel:
+    * Mono or Stereo
 
-Sampling Rate:
-8000Hz,16000Hz,32000Hz,48000Hz,96000Hz,192000Hz,
-22050Hz,44100Hz
+* Sampling Rate:
+    * 8000Hz, 16000Hz, 32000Hz, 48000Hz, 96000Hz, 192000Hz, 22050Hz or 44100Hz
 
 ## Documents
 ```
@@ -26,7 +26,7 @@ cargo doc --open
 
 ## Usage Examples
 ### Open & Save File
-```
+```Rust
 extern crate wav_f64vec;
 use wav_f64vec::*;
 
@@ -62,7 +62,7 @@ fn main() {
 
 ```
 ### New & Save File
-```
+```Rust
 extern crate wav_f64vec;
 use wav_f64vec::*;
 
