@@ -5,11 +5,14 @@ pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + S
 #[derive(Debug, Clone)]
 pub struct WavF64VecError {
     err_kind: WavF64VecErrorKind,
-    op_additional_message:Option<String>,
+    op_additional_message: Option<String>,
 }
 
 impl WavF64VecError {
-    pub fn new(err_kind: WavF64VecErrorKind, op_additional_message:Option<String>) -> Box<dyn std::error::Error + Send + Sync + 'static> {
+    pub fn new(
+        err_kind: WavF64VecErrorKind,
+        op_additional_message: Option<String>,
+    ) -> Box<dyn std::error::Error + Send + Sync + 'static> {
         Box::<WavF64VecError>::new(WavF64VecError {
             err_kind: err_kind,
             op_additional_message: op_additional_message,
@@ -23,8 +26,7 @@ impl fmt::Display for WavF64VecError {
             if err_message.err_kind == self.err_kind {
                 if let Some(additional_message) = &self.op_additional_message {
                     return write!(f, "{}", format!("{} : {}", err_message.message, additional_message));
-                }
-                else {
+                } else {
                     return write!(f, "{}", format!("{}", err_message.message));
                 }
             }
@@ -52,7 +54,7 @@ struct WavF64VecErrorMessage {
     message: &'static str,
 }
 
-const WAVE_AUDIO_ERR_MESSAGE:[WavF64VecErrorMessage;8] = [
+const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 8] = [
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::PathIsNotFile,
         message: "Specified path is not file.",

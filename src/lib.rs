@@ -42,10 +42,16 @@ impl WaveFormat {
     /// Check the format us supported.
     pub fn format_check(wave_format: &WaveFormat) -> Result<()> {
         if wave_format.channel < 1 || wave_format.channel > 2 {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::FormatIsNotSupported, Some("channel number".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::FormatIsNotSupported,
+                Some("channel number".to_string()),
+            ));
         }
         if wave_format.bits == 0 || wave_format.bits > 64 {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::FormatIsNotSupported, Some("bit rate".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::FormatIsNotSupported,
+                Some("bit rate".to_string()),
+            ));
         }
         match wave_format.sampling_rate {
             8000 => {}
@@ -57,7 +63,10 @@ impl WaveFormat {
             96000 => {}
             192000 => {}
             _ => {
-                return Err(WavF64VecError::new(WavF64VecErrorKind::FormatIsNotSupported, Some("sampling rate".to_string())));
+                return Err(WavF64VecError::new(
+                    WavF64VecErrorKind::FormatIsNotSupported,
+                    Some("sampling rate".to_string()),
+                ));
             }
         }
         Ok(())
@@ -96,7 +105,6 @@ pub struct WavFile {
     pub sub_chunks: Vec<SubChunk>,
 }
 
-
 impl WavFile {
     /// Create structure.
     pub fn new() -> WavFile {
@@ -129,16 +137,25 @@ impl WavFile {
         // -- Get WavFile Construction --
         // "RIFF"
         if buf[0x00..0x04] != [b'R', b'I', b'F', b'F'] {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::FileIsNotCompatibleFormat, Some("\"RIFF\"".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::FileIsNotCompatibleFormat,
+                Some("\"RIFF\"".to_string()),
+            ));
         }
         // RIFF Size
         let riff_size = usize::try_from(u32::from_le_bytes(<[u8; 4]>::try_from(&buf[0x04..0x08])?))?;
         if riff_size != file_size - 8 {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::FileIsNotCompatibleFormat, Some("RIFF Size".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::FileIsNotCompatibleFormat,
+                Some("RIFF Size".to_string()),
+            ));
         }
         // "WAVE"
         if buf[0x08..0x0c] != [b'W', b'A', b'V', b'E'] {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::FileIsNotCompatibleFormat, Some("\"WAVE\"".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::FileIsNotCompatibleFormat,
+                Some("\"WAVE\"".to_string()),
+            ));
         }
 
         let sub_chunks_vec = self.extract_sub_chunks(buf[0x0c..].to_vec(), file_size - 12)?;
@@ -215,7 +232,10 @@ impl WavFile {
     fn get_format_from_chunk(&self, chunk_body: &Vec<u8>) -> Result<WaveFormat> {
         // format id
         if chunk_body.len() < 0x10 {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("\"fmt\"".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::SubChunkSizeError,
+                Some("\"fmt\"".to_string()),
+            ));
         }
         let mut format_id = usize::from(u16::from_le_bytes(<[u8; 2]>::try_from(&chunk_body[0x00..0x02])?));
         match format_id {
@@ -223,7 +243,10 @@ impl WavFile {
             WAVEFORMAT_ID_IEEE_FLOAT => {}
             WAVEFORMAT_ID_EXTENSIBLE => {
                 if chunk_body.len() < 0x28 {
-                    return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("\"fmt\"".to_string())));
+                    return Err(WavF64VecError::new(
+                        WavF64VecErrorKind::SubChunkSizeError,
+                        Some("\"fmt\"".to_string()),
+                    ));
                 }
                 format_id = usize::from(u16::from_le_bytes(<[u8; 2]>::try_from(&chunk_body[0x18..0x1A])?));
 
@@ -233,16 +256,25 @@ impl WavFile {
                 } else if format_id == WAVEFORMAT_ID_IEEE_FLOAT {
                     waveextensible_subtype_guid = &WAVEFORMATEXTENSIBLE_SUBTYPE_IEEE_FLOAT_GUID_LEBYTES;
                 } else {
-                    return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("format id".to_string())));
+                    return Err(WavF64VecError::new(
+                        WavF64VecErrorKind::SubChunkSizeError,
+                        Some("format id".to_string()),
+                    ));
                 }
                 for (idx, byte_data) in chunk_body[0x18..0x28].iter().enumerate() {
                     if *byte_data != waveextensible_subtype_guid[idx] {
-                        return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("format id".to_string())));
+                        return Err(WavF64VecError::new(
+                            WavF64VecErrorKind::SubChunkSizeError,
+                            Some("format id".to_string()),
+                        ));
                     }
                 }
             }
             _ => {
-                return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("format id".to_string())));
+                return Err(WavF64VecError::new(
+                    WavF64VecErrorKind::SubChunkSizeError,
+                    Some("format id".to_string()),
+                ));
             }
         }
 
@@ -259,11 +291,17 @@ impl WavFile {
 
         // Check Byte Per Sec.
         if bytes_per_sec != channel * sampling_rate * (bits / 8) {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("bytes per sec".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::SubChunkSizeError,
+                Some("bytes per sec".to_string()),
+            ));
         }
         // Check Block Size.
         if block_size != channel * bits / 8 {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeError, Some("block size".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::SubChunkSizeError,
+                Some("block size".to_string()),
+            ));
         }
         Ok(WaveFormat {
             id: format_id,
@@ -292,8 +330,6 @@ impl WavFile {
         Ok(chunk_body)
     }
 
-
-
     /// Get audio data. Retrun Value: Vec<Vec<f64>: Outer is channel vec. Inner is data vec.
     pub fn get_channel_vec_audio(&self) -> Result<(WaveFormat, Vec<Vec<f64>>)> {
         let (wave_format, bytes_data) = self.get_bytes_audio()?;
@@ -317,26 +353,36 @@ impl WavFile {
                     if op_wave_format.is_none() {
                         op_wave_format = Some(self.get_format_from_chunk(&sub_chunk.bytes_data_vec)?);
                     } else {
-                        return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkDuplication, Some("\"fmt\"".to_string())));
+                        return Err(WavF64VecError::new(
+                            WavF64VecErrorKind::SubChunkDuplication,
+                            Some("\"fmt\"".to_string()),
+                        ));
                     }
                 }
                 [b'd', b'a', b't', b'a'] => {
                     if op_bytes_data.is_none() {
                         op_bytes_data = Some(sub_chunk.bytes_data_vec.clone());
                     } else {
-                        return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkDuplication, Some("\"data\"".to_string())));
+                        return Err(WavF64VecError::new(
+                            WavF64VecErrorKind::SubChunkDuplication,
+                            Some("\"data\"".to_string()),
+                        ));
                     }
                 }
                 _ => {}
             }
         }
         if op_wave_format.is_none() {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::NoRequiredSubChunk, Some("\"fmt\"".to_string())));
-        }
-        else if op_bytes_data.is_none() {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::NoRequiredSubChunk, Some("\"data\"".to_string())));
-        }
-        else {
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::NoRequiredSubChunk,
+                Some("\"fmt\"".to_string()),
+            ));
+        } else if op_bytes_data.is_none() {
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::NoRequiredSubChunk,
+                Some("\"data\"".to_string()),
+            ));
+        } else {
             Ok((op_wave_format.unwrap(), op_bytes_data.unwrap()))
         }
     }
@@ -353,10 +399,7 @@ impl WavFile {
         for (pos, _) in bytes_data_vec.iter().enumerate().step_by(step) {
             for channel_idx in 0..wave_format.channel {
                 let stt = pos + channel_idx * size;
-                channel_vec[channel_idx].push(bytes_to_f64wave(
-                    wave_format.id,
-                    &bytes_data_vec[stt..stt + size],
-                )?);
+                channel_vec[channel_idx].push(bytes_to_f64wave(wave_format.id, &bytes_data_vec[stt..stt + size])?);
             }
         }
         Ok(channel_vec)
@@ -373,10 +416,7 @@ impl WavFile {
             let mut channel_vec = Vec::new();
             for channel_idx in 0..wave_format.channel {
                 let stt = pos + channel_idx * size;
-                channel_vec.push(bytes_to_f64wave(
-                    wave_format.id,
-                    &bytes_data_vec[stt..stt + size],
-                )?);
+                channel_vec.push(bytes_to_f64wave(wave_format.id, &bytes_data_vec[stt..stt + size])?);
             }
             data_vec.push(channel_vec);
         }
@@ -390,7 +430,11 @@ impl WavFile {
         let mut bytes_data_vec: Vec<u8> = Vec::new();
         for (data_idx, _) in channel_data_vec[0].iter().enumerate() {
             for channel_idx in 0..wave_format.channel {
-                bytes_data_vec.append(&mut f64wave_to_bytes(wave_format.id, channel_data_vec[channel_idx][data_idx], wave_format.bits)?);
+                bytes_data_vec.append(&mut f64wave_to_bytes(
+                    wave_format.id,
+                    channel_data_vec[channel_idx][data_idx],
+                    wave_format.bits,
+                )?);
             }
         }
         self.update_audio(format_buf, bytes_data_vec)?;
@@ -404,7 +448,11 @@ impl WavFile {
         let mut bytes_data_vec: Vec<u8> = Vec::new();
         for (data_idx, _) in data_channel_vec.iter().enumerate() {
             for channel_idx in 0..wave_format.channel {
-                bytes_data_vec.append(&mut f64wave_to_bytes(wave_format.id, data_channel_vec[data_idx][channel_idx], wave_format.bits)?);
+                bytes_data_vec.append(&mut f64wave_to_bytes(
+                    wave_format.id,
+                    data_channel_vec[data_idx][channel_idx],
+                    wave_format.bits,
+                )?);
             }
         }
         self.update_audio(format_buf, bytes_data_vec)?;
@@ -420,14 +468,20 @@ impl WavFile {
                     if op_format_chunk_idx.is_none() {
                         op_format_chunk_idx = Some(chunk_idx);
                     } else {
-                        return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkDuplication, Some("\"fmt\"".to_string())));
+                        return Err(WavF64VecError::new(
+                            WavF64VecErrorKind::SubChunkDuplication,
+                            Some("\"fmt\"".to_string()),
+                        ));
                     }
                 }
                 [b'd', b'a', b't', b'a'] => {
                     if op_data_chunk_idx.is_none() {
                         op_data_chunk_idx = Some(chunk_idx);
                     } else {
-                        return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkDuplication, Some("\"data\"".to_string())));
+                        return Err(WavF64VecError::new(
+                            WavF64VecErrorKind::SubChunkDuplication,
+                            Some("\"data\"".to_string()),
+                        ));
                     }
                 }
                 _ => {}
@@ -480,7 +534,7 @@ impl WavFile {
 /// Convert from a bytes data vector to a audio data value(`f64`).
 pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
     let bytes_len = bytes.len();
-    
+
     match format_id {
         WAVEFORMAT_ID_PCM => {
             if bytes_len == 1 {
@@ -488,9 +542,8 @@ pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
                 //to signed 8bit
                 if bytes[0] < 128 {
                     buffer[0] = bytes[0] + 128;
-                }
-                else {
-                    buffer[0]  = bytes[0] - 128;
+                } else {
+                    buffer[0] = bytes[0] - 128;
                 }
                 Ok(f64::from(i8::from_le_bytes(buffer)) / f64::from(i8::MAX))
             } else if bytes_len == 2 {
@@ -530,9 +583,10 @@ pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
                 Err(WavF64VecError::new(WavF64VecErrorKind::BytesLengthError, None))
             }
         }
-        _ => {
-            Err(WavF64VecError::new(WavF64VecErrorKind::FormatIsNotSupported, Some("format id".to_string())))
-        }
+        _ => Err(WavF64VecError::new(
+            WavF64VecErrorKind::FormatIsNotSupported,
+            Some("format id".to_string()),
+        )),
     }
 }
 
@@ -551,13 +605,12 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
                 } else {
                     i8_val = (f64_val * f64::from(i8::MAX)).round() as i8;
                 }
-    
-                let mut buffer: [u8;1] = i8_val.to_le_bytes();
+
+                let mut buffer: [u8; 1] = i8_val.to_le_bytes();
                 //to unsigned 8bit
                 if buffer[0] < 128 {
                     buffer[0] += 128;
-                }
-                else {
+                } else {
                     buffer[0] -= 128;
                 }
                 Ok(buffer.to_vec())
@@ -570,7 +623,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
                 } else {
                     i16_val = (f64_val * f64::from(i16::MAX)).round() as i16;
                 }
-    
+
                 let buffer: [u8; 2] = i16_val.to_le_bytes();
                 //signed 16bit
                 Ok(buffer.to_vec())
@@ -583,7 +636,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
                 } else {
                     i32_val = (f64_val * f64::from(0x7fffffi32)).round() as i32;
                 }
-    
+
                 let buffer: [u8; 4] = i32_val.to_le_bytes();
                 //signed 24bit
                 Ok(buffer[0..3].to_vec())
@@ -596,7 +649,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
                 } else {
                     i32_val = (f64_val * f64::from(i32::MAX)).round() as i32;
                 }
-    
+
                 let buffer: [u8; 4] = i32_val.to_le_bytes();
                 //signed 32bit
                 Ok(buffer.to_vec())
@@ -621,10 +674,9 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
                 Err(WavF64VecError::new(WavF64VecErrorKind::BytesLengthError, None))
             }
         }
-        _ => {
-            Err(WavF64VecError::new(WavF64VecErrorKind::FormatIsNotSupported, Some("format id".to_string())))
-        }
+        _ => Err(WavF64VecError::new(
+            WavF64VecErrorKind::FormatIsNotSupported,
+            Some("format id".to_string()),
+        )),
     }
 }
-
-
