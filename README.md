@@ -1,5 +1,5 @@
 # wav_f64vec
-A library of reading & writing wav files, and interconversion between wav audio data and `Vec<Vec<f64>>`.
+A library of reading & writing wav files, and interconversion between wav audio data and `Vec<Vec<f64>>`. Only for 64bit OS.
 
 ## Introduction
 This libary provides the following features:
