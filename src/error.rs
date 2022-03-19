@@ -2,10 +2,10 @@ use std::fmt;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync + 'static>>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WavF64VecError {
-    err_kind: WavF64VecErrorKind,
-    op_additional_message: Option<String>,
+    pub err_kind: WavF64VecErrorKind,
+    pub op_additional_message: Option<String>,
 }
 
 impl WavF64VecError {
@@ -43,6 +43,7 @@ pub enum WavF64VecErrorKind {
     PathHasNoWavExtention,
     FileIsNotCompatibleFormat,
     SubChunkSizeError,
+    SubChunkSizeTooLarge,
     SubChunkDuplication,
     NoRequiredSubChunk,
     FormatIsNotSupported,
@@ -54,7 +55,7 @@ struct WavF64VecErrorMessage {
     message: &'static str,
 }
 
-const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 8] = [
+const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 9] = [
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::PathIsNotFile,
         message: "Specified path is not file.",
@@ -70,6 +71,10 @@ const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 8] = [
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::SubChunkSizeError,
         message: "Sub chunk size is wrong.",
+    },
+    WavF64VecErrorMessage {
+        err_kind: WavF64VecErrorKind::SubChunkSizeTooLarge,
+        message: "Sub chunk size is too large.",
     },
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::SubChunkDuplication,

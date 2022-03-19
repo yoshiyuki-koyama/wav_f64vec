@@ -79,8 +79,6 @@ impl WaveFormat {
 pub struct SubChunk {
     /// Chuck identifier.
     pub chunk_id: [u8; 4],
-    /// Chunk size.
-    pub body_size: usize,
     /// Chunk data.
     pub bytes_data_vec: Vec<u8>,
 }
@@ -89,7 +87,6 @@ impl SubChunk {
     pub fn new() -> SubChunk {
         SubChunk {
             chunk_id: [0, 0, 0, 0],
-            body_size: 0,
             bytes_data_vec: Vec::new(),
         }
     }
@@ -187,14 +184,23 @@ impl WavFile {
         buf.append(&mut [b'R', b'I', b'F', b'F'].to_vec());
         let mut riff_size: usize = 4;
         for sub_chunk in &self.sub_chunks {
-            riff_size += sub_chunk.body_size + 8;
+            if let Some (new_riff_size) = riff_size.checked_add(sub_chunk.bytes_data_vec.len() + 8) {
+                dbg!(new_riff_size);
+                riff_size = new_riff_size;
+            }
+            else {
+                return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeTooLarge, None));
+            }
+        }
+        if riff_size > 0xffffffff - 8 {
+            return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeTooLarge, None));
         }
         buf.append(&mut riff_size.to_le_bytes()[0..4].to_vec());
         buf.append(&mut [b'W', b'A', b'V', b'E'].to_vec());
         for sub_chunk in &mut self.sub_chunks {
             buf.append(&mut sub_chunk.chunk_id.to_vec());
-            buf.append(&mut sub_chunk.body_size.to_le_bytes()[0..4].to_vec());
-            buf.append(&mut sub_chunk.bytes_data_vec.to_vec());
+            buf.append(&mut sub_chunk.bytes_data_vec.len().to_le_bytes()[0..4].to_vec());
+            buf.append(&mut sub_chunk.bytes_data_vec.clone());
         }
         let mut target_file = File::create(file_path)?;
         target_file.write_all(&buf)?;
@@ -220,7 +226,6 @@ impl WavFile {
                     chunk_head_buf[0x02],
                     chunk_head_buf[0x03],
                 ],
-                body_size: chunk_body_size,
                 bytes_data_vec: chunk_head_buf[8..(chunk_body_size + 8)].to_vec(),
             };
             sub_chunks_vec.push(sub_chunk);
@@ -487,25 +492,25 @@ impl WavFile {
                 _ => {}
             }
         }
+
+        self.precheck_sub_chunk_size(op_format_chunk_idx, format_buf.len(), "fmt ".to_string())?;
+        self.precheck_sub_chunk_size(op_data_chunk_idx, bytes_data_vec.len(), "data".to_string())?;
+
         if let Some(chunk_idx) = op_format_chunk_idx {
-            self.sub_chunks[chunk_idx].body_size = format_buf.len();
             self.sub_chunks[chunk_idx].bytes_data_vec = format_buf;
         } else {
             // Create New Fmt Chunk
             let mut sub_chunk = SubChunk::new();
             sub_chunk.chunk_id = [b'f', b'm', b't', b' '];
-            sub_chunk.body_size = format_buf.len();
             sub_chunk.bytes_data_vec = format_buf;
             self.sub_chunks.push(sub_chunk);
         }
         if let Some(idx) = op_data_chunk_idx {
-            self.sub_chunks[idx].body_size = bytes_data_vec.len();
             self.sub_chunks[idx].bytes_data_vec = bytes_data_vec;
         } else {
             // Create New Data Chunk
             let mut sub_chunk = SubChunk::new();
             sub_chunk.chunk_id = [b'd', b'a', b't', b'a'];
-            sub_chunk.body_size = bytes_data_vec.len();
             sub_chunk.bytes_data_vec = bytes_data_vec;
             self.sub_chunks.push(sub_chunk);
         }
@@ -521,11 +526,47 @@ impl WavFile {
                 break;
             }
         }
-
+        self.precheck_sub_chunk_size(op_chunk_idx, new_chunk.bytes_data_vec.len(), String::from_utf8(new_chunk.chunk_id.to_vec())?)?;
         if let Some(idx) = op_chunk_idx {
             self.sub_chunks[idx] = new_chunk;
         } else {
             self.sub_chunks.push(new_chunk);
+        }
+        Ok(())
+    }
+
+    fn precheck_sub_chunk_size(&self, op_chunk_idx: Option<usize>, new_sub_chunk_body_size: usize, chunk_id_string: String) -> Result<()> {
+        let mut total_size: usize = 0;
+        if op_chunk_idx.is_none() {
+            total_size = new_sub_chunk_body_size;
+        }
+
+        for (idx, sub_chunk) in self.sub_chunks.iter().enumerate() {
+            let sub_chunk_body_size: usize;
+            if let Some(chunk_idx) = op_chunk_idx {
+                if idx == chunk_idx {
+                    sub_chunk_body_size = new_sub_chunk_body_size;
+                }
+                else {
+                    sub_chunk_body_size = sub_chunk.bytes_data_vec.len();
+                }
+            }
+            else {
+                sub_chunk_body_size = sub_chunk.bytes_data_vec.len();
+            }
+            // 8 = chunk_id + body_size
+            if let Some(sub_chunk_size) = sub_chunk_body_size.checked_add(8) {
+                if let Some(new_total_size) = total_size.checked_add(sub_chunk_size) {
+                    total_size = new_total_size;
+                    // 12 = "RIFF" + RIFF Size + "WAVE"
+                    if total_size > 0xffffffff - 12 {
+                        return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeTooLarge, Some(chunk_id_string)));
+                    }
+                }
+            }
+            else {
+                return Err(WavF64VecError::new(WavF64VecErrorKind::SubChunkSizeTooLarge, Some(chunk_id_string)));
+            }
         }
         Ok(())
     }

@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use crate::SubChunk;
+
     use super::super::WavFile;
     use super::super::WaveFormat;
+    use super::super::error::*;
     use std::fs::{remove_file, File};
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -264,6 +267,116 @@ mod tests {
         }
         remove_file(&channel_vec_path).unwrap();
         remove_file(&data_vec_path).unwrap();
+    }
+
+    #[test]
+    fn size_check_test() {
+
+        let mut junk_chunk = SubChunk {
+            chunk_id: [b'J', b'U', b'N', b'K'],
+            bytes_data_vec: Vec::with_capacity(0xffffffff)
+        };
+        // 12 = "RIFF" + RIFF Size + "WAVE"
+        // 8 = junk chunk_id + body_size
+        // 24 = "fmt" chunk size
+        // 8 = data chunk_id + body_size
+        // 1 = audio data
+
+        junk_chunk.bytes_data_vec.resize(0xffffffff - 12 - 8 - 24 - 8 - 1, 0);
+
+        let wave_format = WaveFormat {
+            id: 1,
+            channel: 1,
+            sampling_rate: 8000,
+            bits: 8,
+        };
+        let mut data_vec: Vec<f64> = Vec::<f64>::new();
+
+        data_vec.resize(1, 0.0);
+        let mut channel_data_vec: Vec<Vec<f64>> = Vec::new();
+        channel_data_vec.push(data_vec);
+
+
+
+        let mut wav_file = WavFile::new();
+        wav_file.update_sub_chunk(junk_chunk).unwrap();
+        // Ok
+        wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec).unwrap();
+        wav_file.save_as(Path::new("./large_files.wav")).unwrap();
+        remove_file(Path::new("./large_files.wav")).unwrap();
+        // Err
+        channel_data_vec[0].push(0.0);
+        let result = wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec);
+        match result {
+            Ok(_) => {
+                panic!();
+            }
+            Err(err) => {
+                if let Some(wav_err) = err.downcast_ref::<WavF64VecError>() {
+                    if wav_err.err_kind == WavF64VecErrorKind::SubChunkSizeTooLarge {
+                        if wav_err.op_additional_message.as_ref().unwrap() != "data" {
+                            panic!();
+                        }
+                    }
+                    else {
+                        panic!();
+                    }
+                }
+                else {
+                    panic!();
+                }
+            }
+        }
+
+        // Err
+        wav_file.sub_chunks[0].bytes_data_vec.push(0);
+        let result = wav_file.save_as(Path::new("./too_large_files.wav"));
+        match result {
+            Ok(_) => {
+                panic!();
+            }
+            Err(err) => {
+                if let Some(wav_err) = err.downcast_ref::<WavF64VecError>() {
+                    if wav_err.err_kind == WavF64VecErrorKind::SubChunkSizeTooLarge {
+                        if wav_err.op_additional_message.is_some() {
+                            panic!();
+                        }
+                    }
+                    else {
+                        panic!();
+                    }
+                }
+                else {
+                    panic!();
+                }
+            }
+        }
+
+        // Err
+        for _ in 0..23 {
+            wav_file.sub_chunks[0].bytes_data_vec.push(0);
+        }
+        let result = wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec);
+        match result {
+            Ok(_) => {
+                panic!();
+            }
+            Err(err) => {
+                if let Some(wav_err) = err.downcast_ref::<WavF64VecError>() {
+                    if wav_err.err_kind == WavF64VecErrorKind::SubChunkSizeTooLarge {
+                        if wav_err.op_additional_message.as_ref().unwrap() != "fmt " {
+                            panic!();
+                        }
+                    }
+                    else {
+                        panic!();
+                    }
+                }
+                else {
+                    panic!();
+                }
+            }
+        }
     }
 
     fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_vec: &Vec<Vec<f64>>) -> PathBuf {
