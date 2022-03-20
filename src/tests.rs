@@ -383,7 +383,7 @@ mod tests {
     fn sub_chunk_util_test() {
         let mut wav_file = WavFile::new();
 
-
+        // update_sub_chunk
         let abcd_chunk = SubChunk {
             chunk_id: [b'a', b'b', b'c', b'd'],
             bytes_data_vec: vec![0x00, 0x01, 0x02, 0x03]
@@ -405,20 +405,30 @@ mod tests {
         assert_eq!(wav_file.sub_chunks[1], efgh_chunk);
         assert_eq!(wav_file.sub_chunks[2], ijkl_chunk);
 
-        let chunk_id_vec = wav_file.get_sub_chunk_id_vec();
-        assert_eq!(chunk_id_vec, vec![abcd_chunk.chunk_id,efgh_chunk.chunk_id,ijkl_chunk.chunk_id]);
+        assert_eq!(wav_file.get_sub_chunk_id_vec(), vec![abcd_chunk.chunk_id,efgh_chunk.chunk_id,ijkl_chunk.chunk_id]);
 
-        let is_delete = wav_file.delete_sub_chunk(efgh_chunk.chunk_id);
-        assert_eq!(is_delete, true);
-        let is_delete = wav_file.delete_sub_chunk(efgh_chunk.chunk_id);
-        assert_eq!(is_delete, false);
+        // delete_sub_chunk
+        assert_eq!(wav_file.delete_sub_chunk(efgh_chunk.chunk_id), true);
+        assert_eq!(wav_file.delete_sub_chunk(efgh_chunk.chunk_id), false);
         assert_eq!(wav_file.sub_chunks[0], abcd_chunk);
         assert_eq!(wav_file.sub_chunks[1], ijkl_chunk);
-        let idx = wav_file.get_sub_chunk_idx(ijkl_chunk.chunk_id).unwrap();
-        assert_eq!(idx, 1);
-        if wav_file.get_sub_chunk_idx(efgh_chunk.chunk_id).is_some() {
-            panic!()
-        }
+
+        // get_sub_chunk_idx
+        assert_eq!(wav_file.get_sub_chunk_idx(ijkl_chunk.chunk_id).unwrap(), 1);
+        assert_eq!(wav_file.get_sub_chunk_idx(efgh_chunk.chunk_id), None);
+
+        // wave format
+        assert_eq!(wav_file.get_format().unwrap(), None);
+        let wave_format = WaveFormat {
+            id: 1,
+            channel: 1,
+            sampling_rate: 8000,
+            bits: 8,
+        };
+        let channel_data_vec: Vec<Vec<f64>> = vec![vec![0.00]];
+        wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec).unwrap();
+        assert_eq!(wav_file.get_format().unwrap().unwrap(), wave_format);
+
     }
 
     fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_vec: &Vec<Vec<f64>>) -> PathBuf {

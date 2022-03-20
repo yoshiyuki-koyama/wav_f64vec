@@ -234,7 +234,20 @@ impl WavFile {
         return Ok(sub_chunks_vec);
     }
 
-    fn get_format_from_chunk(&self, chunk_body: &Vec<u8>) -> Result<WaveFormat> {
+    /// Get WaveFormat
+    pub fn get_format(&self) -> Result<Option<WaveFormat>> {
+        for sub_chunk in &self.sub_chunks {
+            match sub_chunk.chunk_id {
+                [b'f', b'm', b't', b' '] => {
+                    return Ok(Some(Self::get_format_from_chunk(&sub_chunk.bytes_data_vec)?));
+                }
+                _ => {}
+            }
+        }
+        Ok(None)
+    }
+
+    fn get_format_from_chunk(chunk_body: &Vec<u8>) -> Result<WaveFormat> {
         // format id
         if chunk_body.len() < 0x10 {
             return Err(WavF64VecError::new(
@@ -356,7 +369,7 @@ impl WavFile {
             match sub_chunk.chunk_id {
                 [b'f', b'm', b't', b' '] => {
                     if op_wave_format.is_none() {
-                        op_wave_format = Some(self.get_format_from_chunk(&sub_chunk.bytes_data_vec)?);
+                        op_wave_format = Some(Self::get_format_from_chunk(&sub_chunk.bytes_data_vec)?);
                     } else {
                         return Err(WavF64VecError::new(
                             WavF64VecErrorKind::SubChunkDuplication,
