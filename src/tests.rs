@@ -246,10 +246,9 @@ mod tests {
             assert_eq!(channel_vec_buf, data_vec_buf);
         }
 
-        let mut channel_vec_wav_file = WavFile::new();
-        let mut data_vec_wav_file = WavFile::new();
-        channel_vec_wav_file.open(&channel_vec_path).unwrap();
-        data_vec_wav_file.open(&data_vec_path).unwrap();
+        let channel_vec_wav_file = WavFile::open(&channel_vec_path).unwrap();
+        let data_vec_wav_file = WavFile::open(&data_vec_path).unwrap();
+
         assert_eq!(channel_vec_wav_file.sub_chunks, data_vec_wav_file.sub_chunks);
 
         let (channel_vec_format, channel_data_vec) = channel_vec_wav_file.get_channel_vec_audio().unwrap();
@@ -544,8 +543,7 @@ mod tests {
         }
 
         // sub chunk check
-        let mut wav_file = WavFile::new();
-        wav_file.open(Path::new(file_path)).unwrap();
+        let wav_file = WavFile::open(Path::new(file_path)).unwrap();
 
         let mut fmt_checked = false;
         let mut data_checked = false;

@@ -111,8 +111,8 @@ impl WavFile {
         }
     }
 
-    /// Open wav file and add data to self.
-    pub fn open(&mut self, file_path: &Path) -> Result<()> {
+    /// Open wav file and Create structure with the file data.
+    pub fn open(file_path: &Path) -> Result<WavFile> {
         // -- Check Parameter --
         if !file_path.is_file() {
             return Err(WavF64VecError::new(WavF64VecErrorKind::PathIsNotFile, None));
@@ -155,11 +155,11 @@ impl WavFile {
             ));
         }
 
-        let sub_chunks_vec = self.extract_sub_chunks(buf[0x0c..].to_vec(), file_size - 12)?;
-
-        self.file_path = file_path.to_path_buf();
-        self.sub_chunks = sub_chunks_vec;
-        Ok(())
+        let sub_chunks_vec = Self::extract_sub_chunks(buf[0x0c..].to_vec(), file_size - 12)?;
+        Ok(WavFile {
+            file_path : file_path.to_path_buf(),
+            sub_chunks : sub_chunks_vec,
+        })
     }
 
     /// Save self to wav file.
@@ -210,7 +210,7 @@ impl WavFile {
         Ok(())
     }
 
-    fn extract_sub_chunks(&self, buf: Vec<u8>, chunks_size: usize) -> Result<Vec<SubChunk>> {
+    fn extract_sub_chunks(buf: Vec<u8>, chunks_size: usize) -> Result<Vec<SubChunk>> {
         let mut sub_chunks_vec: Vec<SubChunk> = Vec::new();
         let mut chunk_head_addr: usize = 0x00;
         while chunks_size - chunk_head_addr >= 8 {
