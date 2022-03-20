@@ -31,9 +31,8 @@ extern crate wav_f64vec;
 use wav_f64vec::*;
 
 fn main() {
-    // make a wav file struct and open file
-    let mut wav_file = WavFile::new();
-    wav_file.open(std::path::Path::new(r"./test.wav")).unwrap();
+    // open file and make a wav file struct
+    let mut wav_file = WavFile::open(std::path::Path::new(r"./test.wav")).unwrap();
 
     // make a WavFormat struct and aidio data vector from the wave file sturct
     let (wave_format, mut channel_data_vec) = wav_file.get_channel_vec_audio().unwrap();
