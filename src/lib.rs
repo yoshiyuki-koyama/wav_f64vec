@@ -528,7 +528,7 @@ impl WavFile {
         Ok(())
     }
 
-    /// Update sub chunk. If the argument chunk's identifer does not exist, the argument chunk is added.
+    /// Update a specified sub chunk. If the argument chunk's identifer does not exist, the argument chunk is added.
     pub fn update_sub_chunk(&mut self, new_chunk: SubChunk) -> Result<()> {
         let mut op_chunk_idx: Option<usize> = None;
         for (idx, existing_chunk) in self.sub_chunks.iter().enumerate() {
@@ -594,7 +594,7 @@ impl WavFile {
         Ok(())
     }
 
-    /// Delete sub chunk. If the chunk was deleted, return true. If the argument chunk identifer does not exist, return false.
+    /// Delete a specified sub chunk. If the chunk was deleted, return true. If the argument chunk identifer does not exist, return false.
     pub fn delete_sub_chunk(&mut self, sub_chunk_id: [u8; 4]) -> bool {
         for (idx, existing_chunk) in &mut self.sub_chunks.iter().enumerate() {
             if existing_chunk.chunk_id == sub_chunk_id {
@@ -614,7 +614,7 @@ impl WavFile {
         sub_chunk_id_vec
     }
 
-    /// Get sub_chunk index. If the argument chunk identifer exists, returns Some(Index). Otherwise None.
+    /// Get a specified sub chunk index. If the argument chunk identifer exists, returns Some(Index). Otherwise None.
     pub fn get_sub_chunk_idx(&mut self, sub_chunk_id: [u8; 4]) -> Option<usize> {
         for (idx, existing_chunk) in &mut self.sub_chunks.iter().enumerate() {
             if existing_chunk.chunk_id == sub_chunk_id {
