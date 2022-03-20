@@ -570,6 +570,36 @@ impl WavFile {
         }
         Ok(())
     }
+
+    /// Delete sub chunk. If the chunk was deleted, return true. If the argument chunk identifer does not exist, return false.
+    pub fn delete_sub_chunk(&mut self, sub_chunk_id: [u8; 4]) -> bool {
+        for (idx, existing_chunk) in &mut self.sub_chunks.iter().enumerate() {
+            if existing_chunk.chunk_id == sub_chunk_id {
+                self.sub_chunks.remove(idx);
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Get sub chunk identifier vector.
+    pub fn get_sub_chunk_id_vec(&mut self) -> Vec<[u8; 4]> {
+        let mut sub_chunk_id_vec: Vec<[u8; 4]> = Vec::new();
+        for existing_chunk in &self.sub_chunks {
+            sub_chunk_id_vec.push(existing_chunk.chunk_id.clone());
+        }
+        sub_chunk_id_vec
+    }
+
+    /// Get sub_chunk index. If the argument chunk identifer exists, returns Some(Index). Otherwise None.
+    pub fn get_sub_chunk_idx(&mut self, sub_chunk_id: [u8; 4]) -> Option<usize> {
+        for (idx, existing_chunk) in &mut self.sub_chunks.iter().enumerate() {
+            if existing_chunk.chunk_id == sub_chunk_id {
+                return Some(idx);
+            }
+        }
+        None
+    }
 }
 
 /// Convert from a bytes data vector to a audio data value(`f64`).

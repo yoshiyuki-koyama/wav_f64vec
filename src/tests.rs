@@ -379,6 +379,48 @@ mod tests {
         }
     }
 
+    #[test]
+    fn sub_chunk_util_test() {
+        let mut wav_file = WavFile::new();
+
+
+        let abcd_chunk = SubChunk {
+            chunk_id: [b'a', b'b', b'c', b'd'],
+            bytes_data_vec: vec![0x00, 0x01, 0x02, 0x03]
+        };
+        let efgh_chunk = SubChunk {
+            chunk_id: [b'e', b'f', b'g', b'h'],
+            bytes_data_vec: vec![0x04, 0x05, 0x06, 0x07]
+        };
+        let ijkl_chunk = SubChunk {
+            chunk_id: [b'i', b'j', b'k', b'l'],
+            bytes_data_vec: vec![0x08, 0x09, 0x0A, 0x0B]
+        };
+
+        wav_file.update_sub_chunk(abcd_chunk.clone()).unwrap();
+        wav_file.update_sub_chunk(efgh_chunk.clone()).unwrap();
+        wav_file.update_sub_chunk(ijkl_chunk.clone()).unwrap();
+
+        assert_eq!(wav_file.sub_chunks[0], abcd_chunk);
+        assert_eq!(wav_file.sub_chunks[1], efgh_chunk);
+        assert_eq!(wav_file.sub_chunks[2], ijkl_chunk);
+
+        let chunk_id_vec = wav_file.get_sub_chunk_id_vec();
+        assert_eq!(chunk_id_vec, vec![abcd_chunk.chunk_id,efgh_chunk.chunk_id,ijkl_chunk.chunk_id]);
+
+        let is_delete = wav_file.delete_sub_chunk(efgh_chunk.chunk_id);
+        assert_eq!(is_delete, true);
+        let is_delete = wav_file.delete_sub_chunk(efgh_chunk.chunk_id);
+        assert_eq!(is_delete, false);
+        assert_eq!(wav_file.sub_chunks[0], abcd_chunk);
+        assert_eq!(wav_file.sub_chunks[1], ijkl_chunk);
+        let idx = wav_file.get_sub_chunk_idx(ijkl_chunk.chunk_id).unwrap();
+        assert_eq!(idx, 1);
+        if wav_file.get_sub_chunk_idx(efgh_chunk.chunk_id).is_some() {
+            panic!()
+        }
+    }
+
     fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_vec: &Vec<Vec<f64>>) -> PathBuf {
         let wave_format = WaveFormat {
             id: id,
