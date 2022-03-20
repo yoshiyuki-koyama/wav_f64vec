@@ -185,7 +185,6 @@ impl WavFile {
         let mut riff_size: usize = 4;
         for sub_chunk in &self.sub_chunks {
             if let Some (new_riff_size) = riff_size.checked_add(sub_chunk.bytes_data_vec.len() + 8) {
-                dbg!(new_riff_size);
                 riff_size = new_riff_size;
             }
             else {
