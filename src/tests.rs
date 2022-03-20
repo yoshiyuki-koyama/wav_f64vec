@@ -2,9 +2,9 @@
 mod tests {
     use crate::SubChunk;
 
+    use super::super::error::*;
     use super::super::WavFile;
     use super::super::WaveFormat;
-    use super::super::error::*;
     use std::fs::{remove_file, File};
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -270,10 +270,9 @@ mod tests {
 
     #[test]
     fn size_check_test() {
-
         let mut junk_chunk = SubChunk {
             chunk_id: [b'J', b'U', b'N', b'K'],
-            bytes_data_vec: Vec::with_capacity(0xffffffff)
+            bytes_data_vec: Vec::with_capacity(0xffffffff),
         };
 
         // 12 = "RIFF" + RIFF Size + "WAVE"
@@ -284,13 +283,11 @@ mod tests {
         // The following processes are the alternatives to next line process.
         // junk_chunk.bytes_data_vec.resize(0xffffffff - 12 - 8 - 24 - 8 - 1, 0);
         junk_chunk.bytes_data_vec.push(0);
-        for _ in 0..(4*8) {
+        for _ in 0..(4 * 8) {
             let mut tmp = junk_chunk.bytes_data_vec.clone();
             junk_chunk.bytes_data_vec.append(&mut tmp);
         }
         junk_chunk.bytes_data_vec.truncate(0xffffffff - 12 - 8 - 24 - 8 - 1);
-
-        
 
         let wave_format = WaveFormat {
             id: 1,
@@ -320,12 +317,10 @@ mod tests {
                         if wav_err.op_additional_message.as_ref().unwrap() != "data" {
                             panic!();
                         }
-                    }
-                    else {
+                    } else {
                         panic!();
                     }
-                }
-                else {
+                } else {
                     panic!();
                 }
             }
@@ -344,12 +339,10 @@ mod tests {
                         if wav_err.op_additional_message.is_some() {
                             panic!();
                         }
-                    }
-                    else {
+                    } else {
                         panic!();
                     }
-                }
-                else {
+                } else {
                     panic!();
                 }
             }
@@ -370,12 +363,10 @@ mod tests {
                         if wav_err.op_additional_message.as_ref().unwrap() != "fmt " {
                             panic!();
                         }
-                    }
-                    else {
+                    } else {
                         panic!();
                     }
-                }
-                else {
+                } else {
                     panic!();
                 }
             }
@@ -389,15 +380,15 @@ mod tests {
         // update_sub_chunk
         let abcd_chunk = SubChunk {
             chunk_id: [b'a', b'b', b'c', b'd'],
-            bytes_data_vec: vec![0x00, 0x01, 0x02, 0x03]
+            bytes_data_vec: vec![0x00, 0x01, 0x02, 0x03],
         };
         let efgh_chunk = SubChunk {
             chunk_id: [b'e', b'f', b'g', b'h'],
-            bytes_data_vec: vec![0x04, 0x05, 0x06, 0x07]
+            bytes_data_vec: vec![0x04, 0x05, 0x06, 0x07],
         };
         let ijkl_chunk = SubChunk {
             chunk_id: [b'i', b'j', b'k', b'l'],
-            bytes_data_vec: vec![0x08, 0x09, 0x0A, 0x0B]
+            bytes_data_vec: vec![0x08, 0x09, 0x0A, 0x0B],
         };
 
         wav_file.update_sub_chunk(abcd_chunk.clone()).unwrap();
@@ -408,7 +399,10 @@ mod tests {
         assert_eq!(wav_file.sub_chunks[1], efgh_chunk);
         assert_eq!(wav_file.sub_chunks[2], ijkl_chunk);
 
-        assert_eq!(wav_file.get_sub_chunk_id_vec(), vec![abcd_chunk.chunk_id,efgh_chunk.chunk_id,ijkl_chunk.chunk_id]);
+        assert_eq!(
+            wav_file.get_sub_chunk_id_vec(),
+            vec![abcd_chunk.chunk_id, efgh_chunk.chunk_id, ijkl_chunk.chunk_id]
+        );
 
         // delete_sub_chunk
         assert_eq!(wav_file.delete_sub_chunk(efgh_chunk.chunk_id), true);
@@ -431,7 +425,6 @@ mod tests {
         let channel_data_vec: Vec<Vec<f64>> = vec![vec![0.00]];
         wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec).unwrap();
         assert_eq!(wav_file.get_format().unwrap().unwrap(), wave_format);
-
     }
 
     fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_vec: &Vec<Vec<f64>>) -> PathBuf {
