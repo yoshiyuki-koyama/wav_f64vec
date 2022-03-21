@@ -270,24 +270,15 @@ mod tests {
 
     #[test]
     fn size_check_test() {
-        let mut junk_chunk = SubChunk {
-            chunk_id: [b'J', b'U', b'N', b'K'],
-            bytes_data_vec: Vec::with_capacity(0xffffffff),
-        };
-
         // 12 = "RIFF" + RIFF Size + "WAVE"
         // 8 = junk chunk_id + body_size
         // 24 = "fmt" chunk size
         // 8 = data chunk_id + body_size
         // 1 = audio data
-        // The following processes are the alternatives to next line process.
-        // junk_chunk.bytes_data_vec.resize(0xffffffff - 12 - 8 - 24 - 8 - 1, 0);
-        junk_chunk.bytes_data_vec.push(0);
-        for _ in 0..(4 * 8) {
-            let mut tmp = junk_chunk.bytes_data_vec.clone();
-            junk_chunk.bytes_data_vec.append(&mut tmp);
-        }
-        junk_chunk.bytes_data_vec.truncate(0xffffffff - 12 - 8 - 24 - 8 - 1);
+        let junk_chunk = SubChunk {
+            chunk_id: [b'J', b'U', b'N', b'K'],
+            bytes_data_vec: vec![0x00; 0xffffffff - 12 - 8 - 24 - 8 - 1],
+        };
 
         let wave_format = WaveFormat {
             id: 1,
