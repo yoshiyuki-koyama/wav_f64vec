@@ -25,41 +25,6 @@ cargo doc --open
 ```
 
 ## Usage Examples
-### Open & Save File
-```Rust
-extern crate wav_f64vec;
-use wav_f64vec::*;
-
-fn main() {
-    // open file and make a wav file struct
-    let mut wav_file = WavFile::open(std::path::Path::new(r"./test.wav")).unwrap();
-
-    // make a WavFormat struct and aidio data vector from the wave file sturct
-    let (wave_format, mut channel_data_vec) = wav_file.get_channel_vec_audio().unwrap();
-
-    // any process (example: print format & edit wave)
-    println!(
-        "format id: {}, channel: {}, sampling rate: {}, bits: {}",
-        wave_format.id, wave_format.channel, wave_format.sampling_rate, wave_format.bits
-    );
-    for data_vec in &mut channel_data_vec {
-        for data in data_vec {
-            *data = *data * 0.8;
-        }
-    }
-
-    // reflect changes to wav_file
-    wav_file
-        .update_channel_vec_audio(&wave_format, &channel_data_vec)
-        .unwrap();
-
-    // save a wav file
-    wav_file
-        .save_as(std::path::Path::new("./test1.wav"))
-        .unwrap();
-}
-
-```
 ### New & Save File
 ```Rust
 extern crate wav_f64vec;
@@ -93,6 +58,41 @@ fn main() {
         .update_channel_vec_audio(&wave_format, &channel_data_vec)
         .unwrap();
     wav_file.save_as(std::path::Path::new("test.wav")).unwrap();
+}
+
+```
+### Open & Save File
+```Rust
+extern crate wav_f64vec;
+use wav_f64vec::*;
+
+fn main() {
+    // open file and make a wav file struct
+    let mut wav_file = WavFile::open(std::path::Path::new(r"./test.wav")).unwrap();
+
+    // make a WavFormat struct and aidio data vector from the wave file sturct
+    let (wave_format, mut channel_data_vec) = wav_file.get_channel_vec_audio().unwrap();
+
+    // any process (example: print format & edit wave)
+    println!(
+        "format id: {}, channel: {}, sampling rate: {}, bits: {}",
+        wave_format.id, wave_format.channel, wave_format.sampling_rate, wave_format.bits
+    );
+    for data_vec in &mut channel_data_vec {
+        for data in data_vec {
+            *data = *data * 0.8;
+        }
+    }
+
+    // reflect changes to wav_file
+    wav_file
+        .update_channel_vec_audio(&wave_format, &channel_data_vec)
+        .unwrap();
+
+    // save a wav file
+    wav_file
+        .save_as(std::path::Path::new("./test1.wav"))
+        .unwrap();
 }
 
 ```
