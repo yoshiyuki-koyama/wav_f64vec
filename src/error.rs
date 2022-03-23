@@ -48,6 +48,7 @@ pub enum WavF64VecErrorKind {
     NoRequiredSubChunk,
     FormatIsNotSupported,
     BytesLengthError,
+    AudioDataVecLengthError,
 }
 
 struct WavF64VecErrorMessage {
@@ -55,7 +56,7 @@ struct WavF64VecErrorMessage {
     message: &'static str,
 }
 
-const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 9] = [
+const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 10] = [
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::PathIsNotFile,
         message: "Specified path is not file.",
@@ -91,5 +92,9 @@ const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 9] = [
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::BytesLengthError,
         message: "Bytes length is wrong.",
+    },
+    WavF64VecErrorMessage {
+        err_kind: WavF64VecErrorKind::AudioDataVecLengthError,
+        message: "Audio data vector length is too small or too large.",
     },
 ];

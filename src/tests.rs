@@ -5,6 +5,7 @@ mod tests {
     use super::super::error::*;
     use super::super::WavFile;
     use super::super::WaveFormat;
+    use super::super::{convert_sampling_rate_for_channel_data_vec, convert_sampling_rate_for_data_channel_vec};
     use std::fs::{remove_file, File};
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -215,14 +216,14 @@ mod tests {
     #[test]
     fn vec_order_test() {
         #[rustfmt::skip]
-        let channel_vec: Vec<Vec<f64>> = vec![
+        let channel_data_vec: Vec<Vec<f64>> = vec![
             vec![0.00, 0.50, 1.00, 0.50, 0.00, -0.50, -1.00, -0.50, 0.00],
             vec![0.00, -0.50, -1.00, -0.50, 0.00, 0.50, 1.00, 0.50, 0.00],
         ];
 
-        let channel_vec_path = create_test_file_from_channel_vec(1, 2, 16000, 16, &channel_vec);
+        let channel_vec_path = create_test_file_from_channel_vec(1, 2, 16000, 16, &channel_data_vec);
         #[rustfmt::skip]
-        let data_vec: Vec<Vec<f64>> = vec![
+        let data_channel_vec: Vec<Vec<f64>> = vec![
             vec![0.00, 0.00],
             vec![0.50, -0.50],
             vec![1.00, -1.00],
@@ -234,7 +235,7 @@ mod tests {
             vec![0.00, 0.00],
         ];
 
-        let data_vec_path = create_test_file_from_data_vec(1, 2, 16000, 16, &data_vec);
+        let data_vec_path = create_test_file_from_data_vec(1, 2, 16000, 16, &data_channel_vec);
 
         {
             let channel_vec_file = File::open(channel_vec_path.clone()).unwrap();
@@ -251,8 +252,8 @@ mod tests {
 
         assert_eq!(channel_vec_wav_file.sub_chunks, data_vec_wav_file.sub_chunks);
 
-        let (channel_vec_format, channel_data_vec) = channel_vec_wav_file.get_channel_vec_audio().unwrap();
-        let (data_vec_format, data_channel_vec) = data_vec_wav_file.get_data_vec_audio().unwrap();
+        let (channel_vec_format, channel_data_vec) = channel_vec_wav_file.get_audio_for_channel_data_vec().unwrap();
+        let (data_vec_format, data_channel_vec) = data_vec_wav_file.get_audio_for_data_channel_vec().unwrap();
         assert_eq!(channel_vec_format, data_vec_format);
         assert_eq!(channel_data_vec.len(), data_channel_vec[0].len());
         assert_eq!(channel_data_vec[0].len(), data_channel_vec.len());
@@ -266,6 +267,118 @@ mod tests {
         }
         remove_file(&channel_vec_path).unwrap();
         remove_file(&data_vec_path).unwrap();
+    }
+
+    #[test]
+    fn convert_sampling_rate_test() {
+        // 33200 to 48000
+        let dst_data48k = |dst_data_idx, src_data1, src_data2| {
+            let fraction = if (dst_data_idx * 32000 % 48000) == 0 {
+                0.0
+            } else {
+                ((dst_data_idx * 32000) as f64 / 48000 as f64).fract()
+            };
+            src_data1 * (1.0 - fraction) + src_data2 * fraction
+        };
+        // 33200 to 22050
+        let dst_data22k = |dst_data_idx, src_data1, src_data2| {
+            let fraction = if (dst_data_idx * 32000 % 22050) == 0 {
+                0.0
+            } else {
+                ((dst_data_idx * 32000) as f64 / 22050 as f64).fract()
+            };
+            src_data1 * (1.0 - fraction) + src_data2 * fraction
+        };
+
+        {
+            #[rustfmt::skip]
+            let channel_data_32000_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, 0.50, 1.00, 0.50, 0.00, -0.50, -1.00, -0.50, 0.00],
+                vec![0.00, -0.50, -1.00, -0.50, 0.00, 0.50, 1.00, 0.50, 0.00],
+            ];
+
+            let new_channel_data_vec = convert_sampling_rate_for_channel_data_vec(&channel_data_32000_vec, 32000, 16000).unwrap();
+            #[rustfmt::skip]
+            let channel_data_16000_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, 1.00, 0.00, -1.00, 0.00],
+                vec![0.00, -1.00, 0.00, 1.00, 0.00],
+            ];
+            assert_eq!(new_channel_data_vec, channel_data_16000_vec);
+            let new_channel_data_vec = convert_sampling_rate_for_channel_data_vec(&channel_data_32000_vec, 32000, 48000).unwrap();
+            #[rustfmt::skip]
+            let channel_data_48000_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, dst_data48k(1, 0.00, 0.50), dst_data48k(2, 0.50, 1.00), 1.00, dst_data48k(4, 1.00, 0.50), dst_data48k(5, 0.50, 0.00), 0.00, dst_data48k(7, 0.00, -0.50), dst_data48k(8, -0.50, -1.00), -1.00, dst_data48k(10, -1.00, -0.50), dst_data48k(11, -0.50, 0.00), 0.00, 0.00],
+                vec![0.00, dst_data48k(1, 0.00, -0.50), dst_data48k(2, -0.50, -1.00), -1.00, dst_data48k(4, -1.00, -0.50), dst_data48k(5, -0.50, 0.00), 0.00, dst_data48k(7, 0.00, 0.50), dst_data48k(8, 0.50, 1.00), 1.00, dst_data48k(10, 1.00, 0.50), dst_data48k(11, 0.50, 0.00), 0.00, 0.00],
+            ];
+            assert_eq!(new_channel_data_vec, channel_data_48000_vec);
+            
+            let new_channel_data_vec = convert_sampling_rate_for_channel_data_vec(&channel_data_32000_vec, 32000, 22050).unwrap();
+            #[rustfmt::skip]
+            let channel_data_22500_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, dst_data22k(1, 0.50, 1.00),  dst_data22k(2, 1.00, 0.50), dst_data22k(3, 0.00, -0.50), dst_data22k(4, -0.50, -1.00), dst_data22k(5, -0.50, 0.00), dst_data22k(6, 0.00, 0.00)],
+                vec![0.00, dst_data22k(1, -0.50, -1.00),  dst_data22k(2, -1.00, -0.50), dst_data22k(3, 0.00, 0.50), dst_data22k(4, 0.50, 1.00), dst_data22k(5, 0.50, 0.00), dst_data22k(6, 0.00, 0.00)],
+            ];
+            assert_eq!(new_channel_data_vec, channel_data_22500_vec);
+        }
+
+        {
+            #[rustfmt::skip]
+            let data_channel_32000_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, 0.00],
+                vec![0.50, -0.50],
+                vec![1.00, -1.00],
+                vec![0.50, -0.50],
+                vec![0.00, 0.00],
+                vec![-0.50, 0.50],
+                vec![-1.00, 1.00],
+                vec![-0.50, 0.50],
+                vec![0.00, 0.00],
+            ];
+
+            let new_channel_data_vec = convert_sampling_rate_for_data_channel_vec(&data_channel_32000_vec, 32000, 16000).unwrap();
+            #[rustfmt::skip]
+            let channel_data_16000_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, 0.00],
+                vec![1.00, -1.00],
+                vec![0.00, 0.00],
+                vec![-1.00, 1.00],
+                vec![0.00, 0.00],
+            ];
+            assert_eq!(new_channel_data_vec, channel_data_16000_vec);
+            let new_channel_data_vec = convert_sampling_rate_for_data_channel_vec(&data_channel_32000_vec, 32000, 48000).unwrap();
+            #[rustfmt::skip]
+            let channel_data_48000_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, 0.00],
+                vec![dst_data48k(1, 0.00, 0.50), dst_data48k(1, 0.00, -0.50)],
+                vec![dst_data48k(2, 0.50, 1.00), dst_data48k(2, -0.50, -1.00)],
+                vec![1.00, -1.00],
+                vec![dst_data48k(4, 1.00, 0.50), dst_data48k(4, -1.00, -0.50)],
+                vec![dst_data48k(5, 0.50, 0.00), dst_data48k(5, -0.50, 0.00)],
+                vec![0.00, 0.00],
+                vec![dst_data48k(7, 0.00, -0.50), dst_data48k(7, 0.00, 0.50)],
+                vec![dst_data48k(8, -0.50, -1.00), dst_data48k(8, 0.50, 1.00)],
+                vec![-1.00, 1.00],
+                vec![dst_data48k(10, -1.00, -0.50), dst_data48k(10, 1.00, 0.50)],
+                vec![dst_data48k(11, -0.50, 0.00), dst_data48k(11, 0.50, 0.00)],
+                vec![0.00, 0.00],
+                vec![0.00, 0.00],
+            ];
+            assert_eq!(new_channel_data_vec, channel_data_48000_vec);
+            
+            let new_channel_data_vec = convert_sampling_rate_for_data_channel_vec(&data_channel_32000_vec, 32000, 22050).unwrap();
+            #[rustfmt::skip]
+            let channel_data_22500_vec: Vec<Vec<f64>> = vec![
+                vec![0.00, 0.00],
+                vec![dst_data22k(1, 0.50, 1.00), dst_data22k(1, -0.50, -1.00)],
+                vec![dst_data22k(2, 1.00, 0.50), dst_data22k(2, -1.00, -0.50)],
+                vec![dst_data22k(3, 0.00, -0.50), dst_data22k(3, 0.00, 0.50)],
+                vec![dst_data22k(4, -0.50, -1.00), dst_data22k(4, 0.50, 1.00)],
+                vec![dst_data22k(5, -0.50, 0.00), dst_data22k(5, 0.50, 0.00)],
+                vec![dst_data22k(6, 0.00, 0.00), dst_data22k(6, 0.00, 0.00)],
+            ];
+            assert_eq!(new_channel_data_vec, channel_data_22500_vec);
+        }
+
     }
 
     #[test]
@@ -292,12 +405,12 @@ mod tests {
         let mut wav_file = WavFile::new();
         wav_file.update_sub_chunk(junk_chunk).unwrap();
         // Ok
-        wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec).unwrap();
+        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
         wav_file.save_as(Path::new("./large_files.wav")).unwrap();
         remove_file(Path::new("./large_files.wav")).unwrap();
         // Err
         channel_data_vec[0].push(0.0);
-        let result = wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec);
+        let result = wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec);
         match result {
             Ok(_) => {
                 panic!();
@@ -343,7 +456,7 @@ mod tests {
         for _ in 0..23 {
             wav_file.sub_chunks[0].bytes_data_vec.push(0);
         }
-        let result = wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec);
+        let result = wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec);
         match result {
             Ok(_) => {
                 panic!();
@@ -414,11 +527,11 @@ mod tests {
             bits: 8,
         };
         let channel_data_vec: Vec<Vec<f64>> = vec![vec![0.00]];
-        wav_file.update_channel_vec_audio(&wave_format, &channel_data_vec).unwrap();
+        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
         assert_eq!(wav_file.get_format().unwrap().unwrap(), wave_format);
     }
 
-    fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_vec: &Vec<Vec<f64>>) -> PathBuf {
+    fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_data_vec: &Vec<Vec<f64>>) -> PathBuf {
         let wave_format = WaveFormat {
             id: id,
             channel: channel,
@@ -426,7 +539,7 @@ mod tests {
             bits: bits,
         };
         let mut wav_file = WavFile::new();
-        wav_file.update_channel_vec_audio(&wave_format, &channel_vec).unwrap();
+        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
         let path_string = format!(
             "./test_id{}_{}ch_{}hz_{}bits.wav",
             wave_format.id, wave_format.channel, wave_format.sampling_rate, wave_format.bits
@@ -440,7 +553,7 @@ mod tests {
         channel: usize,
         sampling_rate: usize,
         bits: usize,
-        channel_vec: &Vec<Vec<f64>>,
+        channel_data_vec: &Vec<Vec<f64>>,
     ) -> PathBuf {
         let wave_format = WaveFormat {
             id: id,
@@ -449,7 +562,7 @@ mod tests {
             bits: bits,
         };
         let mut wav_file = WavFile::new();
-        wav_file.update_channel_vec_audio(&wave_format, &channel_vec).unwrap();
+        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
         wav_file.save_as(Path::new("./test_channel_vec.wav")).unwrap();
         PathBuf::from(&"./test_channel_vec.wav")
     }
@@ -459,7 +572,7 @@ mod tests {
         channel: usize,
         sampling_rate: usize,
         bits: usize,
-        data_vec: &Vec<Vec<f64>>,
+        data_channel_vec: &Vec<Vec<f64>>,
     ) -> PathBuf {
         let wave_format = WaveFormat {
             id: id,
@@ -469,7 +582,7 @@ mod tests {
         };
 
         let mut wav_file = WavFile::new();
-        wav_file.update_data_vec_audio(&wave_format, &data_vec).unwrap();
+        wav_file.update_audio_for_data_channel_vec(&wave_format, &data_channel_vec).unwrap();
         wav_file.save_as(Path::new("./test_data_vec.wav")).unwrap();
         PathBuf::from(&"./test_data_vec.wav")
     }
@@ -553,7 +666,7 @@ mod tests {
             panic!();
         }
 
-        let (_, channel_data_vec) = wav_file.get_channel_vec_audio().unwrap();
+        let (_, channel_data_vec) = wav_file.get_audio_for_channel_data_vec().unwrap();
         dbg!(&channel_data_vec, expected_channel_vec);
         assert_eq!(channel_data_vec, *expected_channel_vec);
     }
