@@ -55,7 +55,7 @@ fn main() {
 
     let mut wav_file = WavFile::new();
     wav_file
-        .update_channel_vec_audio(&wave_format, &channel_data_vec)
+        .update_audio_for_channel_data_vec(&wave_format, &channel_data_vec)
         .unwrap();
     wav_file.save_as(std::path::Path::new("test.wav")).unwrap();
 }
@@ -71,22 +71,30 @@ fn main() {
     let mut wav_file = WavFile::open(std::path::Path::new(r"./test.wav")).unwrap();
 
     // make a WavFormat struct and aidio data vector from the wave file sturct
-    let (wave_format, mut channel_data_vec) = wav_file.get_channel_vec_audio().unwrap();
+    let (wave_format, channel_data_vec) = wav_file.get_audio_for_channel_data_vec().unwrap();
 
-    // any process (example: print format & edit wave)
+    // any process (example: print format & convert sampling rate of wave)
     println!(
-        "format id: {}, channel: {}, sampling rate: {}, bits: {}",
+        "[opened file] format id: {}, channel: {}, sampling rate: {}, bits: {}",
         wave_format.id, wave_format.channel, wave_format.sampling_rate, wave_format.bits
     );
-    for data_vec in &mut channel_data_vec {
-        for data in data_vec {
-            *data = *data * 0.8;
-        }
-    }
+    println!("convert sampling rate to 44100Hz.",);
+    let mut new_format = wave_format.clone();
+    new_format.sampling_rate = 44100;
+    let new_channel_data_vec = convert_sampling_rate_for_channel_data_vec(
+        &channel_data_vec,
+        wave_format.sampling_rate,
+        new_format.sampling_rate,
+    )
+    .unwrap();
+    println!(
+        "[new file] format id: {}, channel: {}, sampling rate: {}, bits: {}",
+        new_format.id, new_format.channel, new_format.sampling_rate, new_format.bits
+    );
 
     // reflect changes to wav_file
     wav_file
-        .update_channel_vec_audio(&wave_format, &channel_data_vec)
+        .update_audio_for_channel_data_vec(&new_format, &new_channel_data_vec)
         .unwrap();
 
     // save a wav file
