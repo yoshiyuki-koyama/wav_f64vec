@@ -311,7 +311,7 @@ mod tests {
                 vec![0.00, dst_data48k(1, 0.00, -0.50), dst_data48k(2, -0.50, -1.00), -1.00, dst_data48k(4, -1.00, -0.50), dst_data48k(5, -0.50, 0.00), 0.00, dst_data48k(7, 0.00, 0.50), dst_data48k(8, 0.50, 1.00), 1.00, dst_data48k(10, 1.00, 0.50), dst_data48k(11, 0.50, 0.00), 0.00, 0.00],
             ];
             assert_eq!(new_channel_data_vec, channel_data_48000_vec);
-            
+
             let new_channel_data_vec = convert_sampling_rate_for_channel_data_vec(&channel_data_32000_vec, 32000, 22050).unwrap();
             #[rustfmt::skip]
             let channel_data_22500_vec: Vec<Vec<f64>> = vec![
@@ -364,7 +364,7 @@ mod tests {
                 vec![0.00, 0.00],
             ];
             assert_eq!(new_channel_data_vec, channel_data_48000_vec);
-            
+
             let new_channel_data_vec = convert_sampling_rate_for_data_channel_vec(&data_channel_32000_vec, 32000, 22050).unwrap();
             #[rustfmt::skip]
             let channel_data_22500_vec: Vec<Vec<f64>> = vec![
@@ -378,7 +378,6 @@ mod tests {
             ];
             assert_eq!(new_channel_data_vec, channel_data_22500_vec);
         }
-
     }
 
     #[test]
@@ -405,7 +404,9 @@ mod tests {
         let mut wav_file = WavFile::new();
         wav_file.update_sub_chunk(junk_chunk).unwrap();
         // Ok
-        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
+        wav_file
+            .update_audio_for_channel_data_vec(&wave_format, &channel_data_vec)
+            .unwrap();
         wav_file.save_as(Path::new("./large_files.wav")).unwrap();
         remove_file(Path::new("./large_files.wav")).unwrap();
         // Err
@@ -527,11 +528,19 @@ mod tests {
             bits: 8,
         };
         let channel_data_vec: Vec<Vec<f64>> = vec![vec![0.00]];
-        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
+        wav_file
+            .update_audio_for_channel_data_vec(&wave_format, &channel_data_vec)
+            .unwrap();
         assert_eq!(wav_file.get_format().unwrap().unwrap(), wave_format);
     }
 
-    fn create_test_file(id: usize, channel: usize, sampling_rate: usize, bits: usize, channel_data_vec: &Vec<Vec<f64>>) -> PathBuf {
+    fn create_test_file(
+        id: usize,
+        channel: usize,
+        sampling_rate: usize,
+        bits: usize,
+        channel_data_vec: &Vec<Vec<f64>>,
+    ) -> PathBuf {
         let wave_format = WaveFormat {
             id: id,
             channel: channel,
@@ -539,7 +548,9 @@ mod tests {
             bits: bits,
         };
         let mut wav_file = WavFile::new();
-        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
+        wav_file
+            .update_audio_for_channel_data_vec(&wave_format, &channel_data_vec)
+            .unwrap();
         let path_string = format!(
             "./test_id{}_{}ch_{}hz_{}bits.wav",
             wave_format.id, wave_format.channel, wave_format.sampling_rate, wave_format.bits
@@ -562,7 +573,9 @@ mod tests {
             bits: bits,
         };
         let mut wav_file = WavFile::new();
-        wav_file.update_audio_for_channel_data_vec(&wave_format, &channel_data_vec).unwrap();
+        wav_file
+            .update_audio_for_channel_data_vec(&wave_format, &channel_data_vec)
+            .unwrap();
         wav_file.save_as(Path::new("./test_channel_vec.wav")).unwrap();
         PathBuf::from(&"./test_channel_vec.wav")
     }
@@ -582,7 +595,9 @@ mod tests {
         };
 
         let mut wav_file = WavFile::new();
-        wav_file.update_audio_for_data_channel_vec(&wave_format, &data_channel_vec).unwrap();
+        wav_file
+            .update_audio_for_data_channel_vec(&wave_format, &data_channel_vec)
+            .unwrap();
         wav_file.save_as(Path::new("./test_data_vec.wav")).unwrap();
         PathBuf::from(&"./test_data_vec.wav")
     }

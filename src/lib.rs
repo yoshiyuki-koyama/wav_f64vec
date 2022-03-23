@@ -17,12 +17,11 @@ pub const WAVEFORMAT_ID_PCM: usize = 0x0001;
 pub const WAVEFORMAT_ID_IEEE_FLOAT: usize = 0x0003;
 pub const WAVEFORMAT_ID_EXTENSIBLE: usize = 0xfffe;
 
-
 // 12 = "RIFF" + RIFF Size + "WAVE"
 // 8 = junk chunk_id + body_size
 // 24 = "fmt" chunk size
 // 8 = data chunk_id + body_size
-pub const AUDIO_DATA_LENGTH_MAX:usize = 0xffffffff - 12 - 24 - 8;
+pub const AUDIO_DATA_LENGTH_MAX: usize = 0xffffffff - 12 - 24 - 8;
 
 const WAVEFORMATEXTENSIBLE_SUBTYPE_PCM_GUID_LEBYTES: [u8; 16] = [
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71,
@@ -83,7 +82,6 @@ impl WaveFormat {
         }
         Ok(())
     }
-
 }
 
 /// RIFF sub chunk.
@@ -454,7 +452,11 @@ impl WavFile {
 
     /// Update audio data (update "fmt" and "data" chunk). If "fmt" or "data" argument chunk do not exist, those chunks are added.
     /// Parameters: channel_data_vec(Vec<Vec<f64>): Outer is channel vec. Inner is data vec.
-    pub fn update_audio_for_channel_data_vec(&mut self, wave_format: &WaveFormat, channel_data_vec: &Vec<Vec<f64>>) -> Result<()> {
+    pub fn update_audio_for_channel_data_vec(
+        &mut self,
+        wave_format: &WaveFormat,
+        channel_data_vec: &Vec<Vec<f64>>,
+    ) -> Result<()> {
         check_channel_data_vec_len(channel_data_vec)?;
         let format_buf: Vec<u8> = self.set_format(wave_format)?;
         let mut bytes_data_vec: Vec<u8> = Vec::new();
@@ -473,7 +475,11 @@ impl WavFile {
 
     /// Update audio data (update "fmt" and "data" chunk). If "fmt" or "data" argument chunk do not exist, those chunks are added.
     /// Parameters: channel_data_vec(Vec<Vec<f64>): Outer is data vec. Inner is channel vec.
-    pub fn update_audio_for_data_channel_vec(&mut self, wave_format: &WaveFormat, data_channel_vec: &Vec<Vec<f64>>) -> Result<()> {
+    pub fn update_audio_for_data_channel_vec(
+        &mut self,
+        wave_format: &WaveFormat,
+        data_channel_vec: &Vec<Vec<f64>>,
+    ) -> Result<()> {
         check_data_channel_vec_len(data_channel_vec)?;
         let format_buf: Vec<u8> = self.set_format(wave_format)?;
         let mut bytes_data_vec: Vec<u8> = Vec::new();
@@ -807,8 +813,7 @@ pub fn convert_sampling_rate_for_channel_data_vec(
         let mut dst_channel_data_vec: Vec<Vec<f64>> = Vec::new();
         let dst_len = if (src_channel_data_vec[0].len() * dst_sampling_rate) % src_sampling_rate == 0 {
             (src_channel_data_vec[0].len() * dst_sampling_rate) / src_sampling_rate
-        }
-        else {
+        } else {
             (src_channel_data_vec[0].len() * dst_sampling_rate) / src_sampling_rate + 1
         };
 
@@ -817,19 +822,19 @@ pub fn convert_sampling_rate_for_channel_data_vec(
         }
 
         for dst_data_idx in 0..dst_len {
-            let src_data_idx: usize =
-                dst_data_idx * src_sampling_rate / dst_sampling_rate;
+            let src_data_idx: usize = dst_data_idx * src_sampling_rate / dst_sampling_rate;
             let fraction: f64 = if (dst_data_idx * src_sampling_rate % dst_sampling_rate) == 0 {
                 0.0
             } else {
                 ((dst_data_idx * src_sampling_rate) as f64 / dst_sampling_rate as f64).fract()
             };
             if src_data_idx + 1 < src_channel_data_vec[0].len() {
-                for (channel_idx ,src_data_vec) in src_channel_data_vec.iter().enumerate() {
-                    dst_channel_data_vec[channel_idx].push(src_data_vec[src_data_idx] * (1.0 - fraction) + src_data_vec[src_data_idx + 1] * fraction);
+                for (channel_idx, src_data_vec) in src_channel_data_vec.iter().enumerate() {
+                    dst_channel_data_vec[channel_idx]
+                        .push(src_data_vec[src_data_idx] * (1.0 - fraction) + src_data_vec[src_data_idx + 1] * fraction);
                 }
             } else if src_data_idx < src_channel_data_vec[0].len() {
-                for (channel_idx ,src_data_vec) in src_channel_data_vec.iter().enumerate() {
+                for (channel_idx, src_data_vec) in src_channel_data_vec.iter().enumerate() {
                     dst_channel_data_vec[channel_idx].push(src_data_vec[src_data_idx] * (1.0 - fraction));
                 }
             } else {
@@ -857,8 +862,7 @@ pub fn convert_sampling_rate_for_data_channel_vec(
         let mut dst_data_channel_vec: Vec<Vec<f64>> = Vec::new();
         let dst_len = if (src_data_channel_vec.len() * dst_sampling_rate) % src_sampling_rate == 0 {
             (src_data_channel_vec.len() * dst_sampling_rate) / src_sampling_rate
-        }
-        else {
+        } else {
             (src_data_channel_vec.len() * dst_sampling_rate) / src_sampling_rate + 1
         };
 
@@ -866,16 +870,18 @@ pub fn convert_sampling_rate_for_data_channel_vec(
 
         for dst_data_idx in 0..dst_len {
             let mut dst_channel_vec: Vec<f64> = Vec::new();
-            let src_data_idx: usize =
-                dst_data_idx * src_sampling_rate / dst_sampling_rate;
-                let fraction: f64 = if (dst_data_idx * src_sampling_rate % dst_sampling_rate) == 0 {
-                    0.0
-                } else {
-                    ((dst_data_idx * src_sampling_rate) as f64 / dst_sampling_rate as f64).fract()
-                };
+            let src_data_idx: usize = dst_data_idx * src_sampling_rate / dst_sampling_rate;
+            let fraction: f64 = if (dst_data_idx * src_sampling_rate % dst_sampling_rate) == 0 {
+                0.0
+            } else {
+                ((dst_data_idx * src_sampling_rate) as f64 / dst_sampling_rate as f64).fract()
+            };
             if src_data_idx + 1 < src_data_channel_vec.len() {
                 for channel_idx in 0..channel_len {
-                    dst_channel_vec.push(src_data_channel_vec[src_data_idx][channel_idx] * (1.0 - fraction) + src_data_channel_vec[src_data_idx + 1][channel_idx] * fraction);
+                    dst_channel_vec.push(
+                        src_data_channel_vec[src_data_idx][channel_idx] * (1.0 - fraction)
+                            + src_data_channel_vec[src_data_idx + 1][channel_idx] * fraction,
+                    );
                 }
             } else if src_data_idx < src_data_channel_vec.len() {
                 for channel_idx in 0..channel_len {
@@ -892,15 +898,24 @@ pub fn convert_sampling_rate_for_data_channel_vec(
 
 fn check_channel_data_vec_len(channel_data_vec: &Vec<Vec<f64>>) -> Result<()> {
     if channel_data_vec.len() == 0 || channel_data_vec.len() > 2 {
-        return Err(WavF64VecError::new(WavF64VecErrorKind::AudioDataVecLengthError, Some("channel length".to_string())));
+        return Err(WavF64VecError::new(
+            WavF64VecErrorKind::AudioDataVecLengthError,
+            Some("channel length".to_string()),
+        ));
     }
     let data_len = channel_data_vec[0].len();
     if data_len > AUDIO_DATA_LENGTH_MAX {
-        return Err(WavF64VecError::new(WavF64VecErrorKind::AudioDataVecLengthError, Some("data length".to_string())));
+        return Err(WavF64VecError::new(
+            WavF64VecErrorKind::AudioDataVecLengthError,
+            Some("data length".to_string()),
+        ));
     }
     for data_vec in channel_data_vec {
         if data_vec.len() != data_len {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::AudioDataVecLengthError, Some("data length of each channel is different".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::AudioDataVecLengthError,
+                Some("data length of each channel is different".to_string()),
+            ));
         }
     }
     Ok(())
@@ -908,16 +923,25 @@ fn check_channel_data_vec_len(channel_data_vec: &Vec<Vec<f64>>) -> Result<()> {
 
 fn check_data_channel_vec_len(data_channel_vec: &Vec<Vec<f64>>) -> Result<()> {
     if data_channel_vec.len() > AUDIO_DATA_LENGTH_MAX {
-        return Err(WavF64VecError::new(WavF64VecErrorKind::AudioDataVecLengthError, Some("data length".to_string())));
+        return Err(WavF64VecError::new(
+            WavF64VecErrorKind::AudioDataVecLengthError,
+            Some("data length".to_string()),
+        ));
     }
 
     let channel_len = data_channel_vec[0].len();
     if channel_len == 0 || channel_len > 2 {
-        return Err(WavF64VecError::new(WavF64VecErrorKind::AudioDataVecLengthError, Some("channel length".to_string())));
+        return Err(WavF64VecError::new(
+            WavF64VecErrorKind::AudioDataVecLengthError,
+            Some("channel length".to_string()),
+        ));
     }
     for channel_vec in data_channel_vec {
         if channel_vec.len() != channel_len {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::AudioDataVecLengthError, Some("channel length of each data is different".to_string())));
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::AudioDataVecLengthError,
+                Some("channel length of each data is different".to_string()),
+            ));
         }
     }
     Ok(())
