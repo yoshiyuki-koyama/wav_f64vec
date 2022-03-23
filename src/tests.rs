@@ -653,8 +653,6 @@ mod tests {
             let target_file = File::open(file_path).unwrap();
             let mut buf = Vec::new();
             BufReader::new(&target_file).read_to_end(&mut buf).unwrap();
-            dbg!("file");
-            dbg!(&buf, &vec_of_file);
             assert_eq!(buf, vec_of_file);
         }
 
@@ -666,14 +664,10 @@ mod tests {
         for sub_chunk in &wav_file.sub_chunks {
             if sub_chunk.chunk_id == [b'f', b'm', b't', b' '] {
                 fmt_checked = true;
-                dbg!("fmt chunk");
-                dbg!(&sub_chunk.bytes_data_vec, &vec_of_fmt_chunk);
                 assert_eq!(sub_chunk.bytes_data_vec, vec_of_fmt_chunk);
             }
             if sub_chunk.chunk_id == [b'd', b'a', b't', b'a'] {
                 data_checked = true;
-                dbg!("data chunk");
-                dbg!(&sub_chunk.bytes_data_vec, &vec_of_data_chunk);
                 assert_eq!(sub_chunk.bytes_data_vec, vec_of_data_chunk);
             }
         }
@@ -682,7 +676,6 @@ mod tests {
         }
 
         let (_, channel_data_vec) = wav_file.get_audio_for_channel_data_vec().unwrap();
-        dbg!(&channel_data_vec, expected_channel_vec);
         assert_eq!(channel_data_vec, *expected_channel_vec);
     }
 }
