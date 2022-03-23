@@ -17,10 +17,11 @@ pub const WAVEFORMAT_ID_PCM: usize = 0x0001;
 pub const WAVEFORMAT_ID_IEEE_FLOAT: usize = 0x0003;
 pub const WAVEFORMAT_ID_EXTENSIBLE: usize = 0xfffe;
 
-// 12 = "RIFF" + RIFF Size + "WAVE"
-// 8 = junk chunk_id + body_size
-// 24 = "fmt" chunk size
-// 8 = data chunk_id + body_size
+
+/// Maximum of body size of the "data" chunk.
+/// * 12 = "RIFF" + RIFF Size + "WAVE"
+/// * 24 = "fmt" chunk minimum size
+/// * 8 = data chunk_id + body_size
 pub const AUDIO_DATA_LENGTH_MAX: usize = 0xffffffff - 12 - 24 - 8;
 
 const WAVEFORMATEXTENSIBLE_SUBTYPE_PCM_GUID_LEBYTES: [u8; 16] = [
@@ -45,7 +46,7 @@ pub struct WaveFormat {
 }
 
 impl WaveFormat {
-    /// Check the format us supported.
+    /// Check the format is supported.
     pub fn format_check(wave_format: &WaveFormat) -> Result<()> {
         if wave_format.channel < 1 || wave_format.channel > 2 {
             return Err(WavF64VecError::new(
@@ -797,7 +798,7 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
 }
 
 /// Convert sampling rate.
-/// Parameters & return: Vec<Vec<f64>: Outer is channel vec. Inner is data vec.
+/// Parameters & return: Vec\<Vec\<f64\>\>: Outer is channel vec. Inner is data vec.
 pub fn convert_sampling_rate_for_channel_data_vec(
     src_channel_data_vec: &Vec<Vec<f64>>,
     src_sampling_rate: usize,
@@ -846,7 +847,7 @@ pub fn convert_sampling_rate_for_channel_data_vec(
 }
 
 /// Convert sampling rate.
-/// Parameters & return: Vec<Vec<f64>: Outer is data vec. Inner is channel vec.
+/// Parameters & return: Vec\<Vec\<f64\>\>: Outer is data vec. Inner is channel vec.
 pub fn convert_sampling_rate_for_data_channel_vec(
     src_data_channel_vec: &Vec<Vec<f64>>,
     src_sampling_rate: usize,
@@ -903,15 +904,9 @@ fn check_channel_data_vec_len(channel_data_vec: &Vec<Vec<f64>>) -> Result<()> {
             Some("channel length".to_string()),
         ));
     }
-    let data_len = channel_data_vec[0].len();
-    if data_len > AUDIO_DATA_LENGTH_MAX {
-        return Err(WavF64VecError::new(
-            WavF64VecErrorKind::AudioDataVecLengthError,
-            Some("data length".to_string()),
-        ));
-    }
+
     for data_vec in channel_data_vec {
-        if data_vec.len() != data_len {
+        if data_vec.len() != channel_data_vec[0].len() {
             return Err(WavF64VecError::new(
                 WavF64VecErrorKind::AudioDataVecLengthError,
                 Some("data length of each channel is different".to_string()),
@@ -922,13 +917,6 @@ fn check_channel_data_vec_len(channel_data_vec: &Vec<Vec<f64>>) -> Result<()> {
 }
 
 fn check_data_channel_vec_len(data_channel_vec: &Vec<Vec<f64>>) -> Result<()> {
-    if data_channel_vec.len() > AUDIO_DATA_LENGTH_MAX {
-        return Err(WavF64VecError::new(
-            WavF64VecErrorKind::AudioDataVecLengthError,
-            Some("data length".to_string()),
-        ));
-    }
-
     let channel_len = data_channel_vec[0].len();
     if channel_len == 0 || channel_len > 2 {
         return Err(WavF64VecError::new(
@@ -936,6 +924,7 @@ fn check_data_channel_vec_len(data_channel_vec: &Vec<Vec<f64>>) -> Result<()> {
             Some("channel length".to_string()),
         ));
     }
+
     for channel_vec in data_channel_vec {
         if channel_vec.len() != channel_len {
             return Err(WavF64VecError::new(
