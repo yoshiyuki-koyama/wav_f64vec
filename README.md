@@ -17,7 +17,7 @@ This libary provides the following features:
     * Mono or Stereo
 
 * Sampling Rate:
-    * 8000Hz, 16000Hz, 32000Hz, 48000Hz, 96000Hz, 192000Hz, 22050Hz or 44100Hz
+    * 1Hz to 192000Hz
 
 ## Documents
 ```

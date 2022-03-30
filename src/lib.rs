@@ -65,21 +65,11 @@ impl WaveFormat {
     }
 
     fn sampling_rate_check(sampling_rate: usize) -> Result<()> {
-        match sampling_rate {
-            8000 => {}
-            16000 => {}
-            22050 => {}
-            44100 => {}
-            32000 => {}
-            48000 => {}
-            96000 => {}
-            192000 => {}
-            _ => {
-                return Err(WavF64VecError::new(
-                    WavF64VecErrorKind::FormatIsNotSupported,
-                    Some("sampling rate".to_string()),
-                ));
-            }
+        if sampling_rate < 1 || 192000 < sampling_rate {
+            return Err(WavF64VecError::new(
+                WavF64VecErrorKind::FormatIsNotSupported,
+                Some("sampling rate".to_string()),
+            ));
         }
         Ok(())
     }
