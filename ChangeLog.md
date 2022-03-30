@@ -1,4 +1,7 @@
 # ChangeLog
+## v0.4.0
+* Remove file extension(.wav) check
+* Relax sampling rate condition.
 ## v0.3.0
 * Rename methods of `Wavfile` structure.
     * `get_channel_vec_audio()` to `get_audio_for_channel_data_vec()`.
