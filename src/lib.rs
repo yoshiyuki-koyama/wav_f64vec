@@ -17,7 +17,6 @@ pub const WAVEFORMAT_ID_PCM: usize = 0x0001;
 pub const WAVEFORMAT_ID_IEEE_FLOAT: usize = 0x0003;
 pub const WAVEFORMAT_ID_EXTENSIBLE: usize = 0xfffe;
 
-
 /// Maximum of body size of the "data" chunk.
 /// * 12 = "RIFF" + RIFF Size + "WAVE"
 /// * 24 = "fmt" chunk minimum size
