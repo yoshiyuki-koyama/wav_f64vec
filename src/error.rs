@@ -40,7 +40,6 @@ impl std::error::Error for WavF64VecError {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum WavF64VecErrorKind {
     PathIsNotFile,
-    PathHasNoWavExtention,
     FileIsNotCompatibleFormat,
     SubChunkSizeError,
     SubChunkSizeTooLarge,
@@ -56,14 +55,10 @@ struct WavF64VecErrorMessage {
     message: &'static str,
 }
 
-const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 10] = [
+const WAVE_AUDIO_ERR_MESSAGE: [WavF64VecErrorMessage; 9] = [
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::PathIsNotFile,
         message: "Specified path is not file.",
-    },
-    WavF64VecErrorMessage {
-        err_kind: WavF64VecErrorKind::PathHasNoWavExtention,
-        message: "Specified path extension is not \".wav\".",
     },
     WavF64VecErrorMessage {
         err_kind: WavF64VecErrorKind::FileIsNotCompatibleFormat,

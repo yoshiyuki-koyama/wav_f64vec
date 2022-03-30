@@ -119,14 +119,6 @@ impl WavFile {
         if !file_path.is_file() {
             return Err(WavF64VecError::new(WavF64VecErrorKind::PathIsNotFile, None));
         }
-        if let Some(extension_str) = file_path.extension() {
-            let extension_string = extension_str.to_ascii_lowercase();
-            if extension_string != "wav" {
-                return Err(WavF64VecError::new(WavF64VecErrorKind::PathHasNoWavExtention, None));
-            }
-        } else {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::PathHasNoWavExtention, None));
-        }
 
         // -- Read Whole File --
         let target_file = File::open(file_path)?;
@@ -174,14 +166,6 @@ impl WavFile {
     /// Save self to wav file as argument path.
     pub fn save_as(&mut self, file_path: &Path) -> Result<()> {
         // -- Check Parameter --
-        if let Some(extension_str) = file_path.extension() {
-            let extension_string = extension_str.to_ascii_lowercase();
-            if extension_string != "wav" {
-                return Err(WavF64VecError::new(WavF64VecErrorKind::PathHasNoWavExtention, None));
-            }
-        } else {
-            return Err(WavF64VecError::new(WavF64VecErrorKind::PathHasNoWavExtention, None));
-        }
         let mut buf: Vec<u8> = Vec::new();
         buf.append(&mut [b'R', b'I', b'F', b'F'].to_vec());
         let mut riff_size: usize = 4;
