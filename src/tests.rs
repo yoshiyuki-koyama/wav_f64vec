@@ -6,6 +6,7 @@ mod tests {
     use super::super::WavFile;
     use super::super::WaveFormat;
     use super::super::{convert_sampling_rate_for_channel_data_vec, convert_sampling_rate_for_data_channel_vec};
+    use super::super::{BIT16_WAVE_DIVISOR, BIT24_WAVE_DIVISOR, BIT32_WAVE_DIVISOR, BIT8_WAVE_DIVISOR};
     use std::fs::{remove_file, File};
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -16,11 +17,13 @@ mod tests {
     fn read_write_convert_test() {
         {
             // formatid:1 , bits per sample:8, channel:1, sampling rate:8000Hz,
-            let half = (0x3Fi8) as f64 / (i8::MAX) as f64;
+            let half = (0x40i8) as f64 / BIT8_WAVE_DIVISOR as f64;
+            let max_plus = i8::MAX as f64 / BIT8_WAVE_DIVISOR as f64;
             let written_channel_vec: Vec<Vec<f64>> =
                 vec![vec![0.00, half, 1.00, 2.00, half, 0.00, -half, -1.00, -2.00, -half, 0.00]];
-            let expected_channel_vec: Vec<Vec<f64>> =
-                vec![vec![0.00, half, 1.00, 1.00, half, 0.00, -half, -1.00, -1.00, -half, 0.00]];
+            let expected_channel_vec: Vec<Vec<f64>> = vec![vec![
+                0.00, half, max_plus, max_plus, half, 0.00, -half, -1.00, -1.00, -half, 0.00,
+            ]];
             let path_buf = create_test_file(1, 1, 8000, 8, &written_channel_vec);
             #[rustfmt::skip]
             let (vec_of_fmt_chunk, vec_of_data_chunk, vec_of_file) = create_u8_vecs(
@@ -33,8 +36,8 @@ mod tests {
                 &[0x08, 0x00],
                 &[0x0B, 0x00, 0x00, 0x00],
                 &[
-                    0x80, 0xBF, 0xFF,
-                    0xFF, 0xBF, 0x80, 0x41, 0x01, 0x01, 0x41, 0x80,
+                    0x80, 0xC0, 0xFF,
+                    0xFF, 0xC0, 0x80, 0x40, 0x00, 0x00, 0x40, 0x80,
                     ],
             );
             check_contents(
@@ -49,14 +52,15 @@ mod tests {
 
         {
             // formatid:1 , bits per sample:16, channel:1, sampling rate:16000Hz,
-            let half = (0x3FFFi16) as f64 / (i16::MAX) as f64;
+            let half = (0x4000i16) as f64 / BIT16_WAVE_DIVISOR as f64;
+            let max_plus = i16::MAX as f64 / BIT16_WAVE_DIVISOR as f64;
             let written_channel_vec: Vec<Vec<f64>> = vec![
                 vec![0.00, half, 1.00, 2.00, half, 0.00, -half, -1.00, -2.00, -half, 0.00],
                 vec![0.00, -half, -1.00, -2.00, -half, 0.00, half, 1.00, 2.00, half, 0.00],
             ];
             let expected_channel_vec: Vec<Vec<f64>> = vec![
-                vec![0.00, half, 1.00, 1.00, half, 0.00, -half, -1.00, -1.00, -half, 0.00],
-                vec![0.00, -half, -1.00, -1.00, -half, 0.00, half, 1.00, 1.00, half, 0.00],
+                vec![0.00, half, max_plus, max_plus, half, 0.00, -half, -1.00, -1.00, -half, 0.00],
+                vec![0.00, -half, -1.00, -1.00, -half, 0.00, half, max_plus, max_plus, half, 0.00],
             ];
             let path_buf = create_test_file(1, 2, 16000, 16, &written_channel_vec);
             #[rustfmt::skip]
@@ -71,9 +75,9 @@ mod tests {
                 &[0x2C, 0x00, 0x00, 0x00],
                 &[
                     0x00, 0x00, 0x00, 0x00,
-                    0xFF, 0x3F, 0x01, 0xC0, 0xFF, 0x7F, 0x01, 0x80, 0xFF, 0x7F, 0x01, 0x80, 0xFF, 0x3F, 0x01, 0xC0,
-                    0x00, 0x00, 0x00, 0x00, 0x01, 0xC0, 0xFF, 0x3F, 0x01, 0x80, 0xFF, 0x7F, 0x01, 0x80, 0xFF, 0x7F,
-                    0x01, 0xC0, 0xFF, 0x3F, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x40, 0x00, 0xC0, 0xFF, 0x7F, 0x00, 0x80, 0xFF, 0x7F, 0x00, 0x80, 0x00, 0x40, 0x00, 0xC0,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x40, 0x00, 0x80, 0xFF, 0x7F, 0x00, 0x80, 0xFF, 0x7F,
+                    0x00, 0xC0, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00,
                 ],
             );
             check_contents(
@@ -88,11 +92,13 @@ mod tests {
 
         {
             // formatid:1 , bits per sample:24, channel:1, sampling rate:22050Hz,
-            let half = (0x3FFFFFi32) as f64 / (0x7FFFFFi32) as f64;
+            let half = (0x400000i32) as f64 / BIT24_WAVE_DIVISOR as f64;
+            let max_plus = (BIT24_WAVE_DIVISOR - 1) as f64 / BIT24_WAVE_DIVISOR as f64;
             let written_channel_vec: Vec<Vec<f64>> =
                 vec![vec![0.00, half, 1.00, 2.00, half, 0.00, -half, -1.00, -2.00, -half, 0.00]];
-            let expected_channel_vec: Vec<Vec<f64>> =
-                vec![vec![0.00, half, 1.00, 1.00, half, 0.00, -half, -1.00, -1.00, -half, 0.00]];
+            let expected_channel_vec: Vec<Vec<f64>> = vec![vec![
+                0.00, half, max_plus, max_plus, half, 0.00, -half, -1.00, -1.00, -half, 0.00,
+            ]];
             let path_buf = create_test_file(1, 1, 22050, 24, &written_channel_vec);
             #[rustfmt::skip]
             let (vec_of_fmt_chunk, vec_of_data_chunk, vec_of_file) = create_u8_vecs(
@@ -105,9 +111,9 @@ mod tests {
                 &[0x18, 0x00],
                 &[0x21, 0x00, 0x00, 0x00],
                 &[
-                    0x00, 0x00, 0x00, 0xFF,
-                    0xFF, 0x3F, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0x3F, 0x00, 0x00, 0x00, 0x01, 0x00,
-                    0xC0, 0x01, 0x00, 0x80, 0x01, 0x00, 0x80, 0x01, 0x00, 0xC0, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x40, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0xC0, 0x00, 0x00, 0x80, 0x00, 0x00, 0x80, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00,
                 ],
             );
             check_contents(
@@ -122,11 +128,13 @@ mod tests {
 
         {
             // formatid:1 , bits per sample:32, channel:1, sampling rate:44100Hz,
-            let half = (0x3FFFFFFFi32) as f64 / (i32::MAX) as f64;
+            let half = (0x40000000i32) as f64 / BIT32_WAVE_DIVISOR as f64;
+            let max_plus = i32::MAX as f64 / BIT32_WAVE_DIVISOR as f64;
             let written_channel_vec: Vec<Vec<f64>> =
                 vec![vec![0.00, half, 1.00, 2.00, half, 0.00, -half, -1.00, -2.00, -half, 0.00]];
-            let expected_channel_vec: Vec<Vec<f64>> =
-                vec![vec![0.00, half, 1.00, 1.00, half, 0.00, -half, -1.00, -1.00, -half, 0.00]];
+            let expected_channel_vec: Vec<Vec<f64>> = vec![vec![
+                0.00, half, max_plus, max_plus, half, 0.00, -half, -1.00, -1.00, -half, 0.00,
+            ]];
             let path_buf = create_test_file(1, 1, 44100, 32, &written_channel_vec);
             #[rustfmt::skip]
             let (vec_of_fmt_chunk, vec_of_data_chunk, vec_of_file) = create_u8_vecs(
@@ -140,9 +148,9 @@ mod tests {
                 &[0x2C, 0x00, 0x00, 0x00],
                 &[
                     0x00, 0x00, 0x00, 0x00,
-                    0xFF, 0xFF, 0xFF, 0x3F, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0x3F,
-                    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xC0, 0x01, 0x00, 0x00, 0x80, 0x01, 0x00, 0x00, 0x80,
-                    0x01, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x00, 0x00, 0x40, 0xFF, 0xFF, 0xFF, 0x7F, 0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x40,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x80,
+                    0x00, 0x00, 0x00, 0xC0, 0x00, 0x00, 0x00, 0x00,
                 ],
             );
             check_contents(

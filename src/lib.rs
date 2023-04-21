@@ -17,6 +17,11 @@ pub const WAVEFORMAT_ID_PCM: usize = 0x0001;
 pub const WAVEFORMAT_ID_IEEE_FLOAT: usize = 0x0003;
 pub const WAVEFORMAT_ID_EXTENSIBLE: usize = 0xfffe;
 
+const BIT8_WAVE_DIVISOR: i32 = 0x80;
+const BIT16_WAVE_DIVISOR: i32 = 0x8000;
+const BIT24_WAVE_DIVISOR: i32 = 0x800000;
+const BIT32_WAVE_DIVISOR: i64 = 0x80000000;
+
 /// Maximum of body size of the "data" chunk.
 /// * 12 = "RIFF" + RIFF Size + "WAVE"
 /// * 24 = "fmt" chunk minimum size
@@ -634,14 +639,14 @@ pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
                 } else {
                     buffer[0] = bytes[0] - 128;
                 }
-                Ok(f64::from(i8::from_le_bytes(buffer)) / f64::from(i8::MAX))
+                Ok(f64::from(i8::from_le_bytes(buffer)) / f64::from(BIT8_WAVE_DIVISOR))
             } else if bytes_len == 2 {
                 //signed 16bit
                 let mut buffer: [u8; 2] = [0; 2];
                 for i in 0..bytes_len {
                     buffer[i] = bytes[i];
                 }
-                Ok(f64::from(i16::from_le_bytes(buffer)) / f64::from(i16::MAX))
+                Ok(f64::from(i16::from_le_bytes(buffer)) / f64::from(BIT16_WAVE_DIVISOR))
             } else if bytes_len == 3 {
                 //signed 24bit
                 let mut buffer: [u8; 4] = [0; 4];
@@ -652,14 +657,14 @@ pub fn bytes_to_f64wave(format_id: usize, bytes: &[u8]) -> Result<f64> {
                 if i32_val > 0x7fffffi32 {
                     i32_val -= 0x1000000i32;
                 }
-                Ok(f64::from(i32_val) / f64::from(0x7fffffi32))
+                Ok(f64::from(i32_val) / f64::from(BIT24_WAVE_DIVISOR))
             } else if bytes_len == 4 {
                 //signed 32bit
                 let mut buffer: [u8; 4] = [0; 4];
                 for i in 0..bytes_len {
                     buffer[i] = bytes[i];
                 }
-                Ok(f64::from(i32::from_le_bytes(buffer)) / f64::from(i32::MAX))
+                Ok(f64::from(i32::from_le_bytes(buffer)) / BIT32_WAVE_DIVISOR as f64)
             } else {
                 Err(WavF64VecError::new(WavF64VecErrorKind::BytesLengthError, None))
             }
@@ -686,16 +691,14 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
         WAVEFORMAT_ID_PCM => {
             // TODO: Max Value Check for each length
             if bytes_len == 1 {
-                let i8_val: i8;
-                if f64_val < -1.0 {
-                    i8_val = i8::MIN + 1;
-                } else if 1.0 < f64_val {
-                    i8_val = i8::MAX;
-                } else {
-                    i8_val = (f64_val * f64::from(i8::MAX)).round() as i8;
+                let mut tmp_val = (f64_val * f64::from(BIT8_WAVE_DIVISOR)).round();
+                if tmp_val < i8::MIN as f64 {
+                    tmp_val = i8::MIN as f64;
+                } else if tmp_val > i8::MAX as f64 {
+                    tmp_val = i8::MAX as f64;
                 }
 
-                let mut buffer: [u8; 1] = i8_val.to_le_bytes();
+                let mut buffer: [u8; 1] = (tmp_val as i8).to_le_bytes();
                 //to unsigned 8bit
                 if buffer[0] < 128 {
                     buffer[0] += 128;
@@ -704,42 +707,37 @@ pub fn f64wave_to_bytes(format_id: usize, f64_val: f64, bits: usize) -> Result<V
                 }
                 Ok(buffer.to_vec())
             } else if bytes_len == 2 {
-                let i16_val: i16;
-                if f64_val < -1.0 {
-                    i16_val = i16::MIN + 1;
-                } else if 1.0 < f64_val {
-                    i16_val = i16::MAX;
-                } else {
-                    i16_val = (f64_val * f64::from(i16::MAX)).round() as i16;
+                let mut tmp_val = (f64_val * f64::from(BIT16_WAVE_DIVISOR)).round();
+                if tmp_val < i16::MIN as f64 {
+                    tmp_val = i16::MIN as f64;
+                } else if tmp_val > i16::MAX as f64 {
+                    tmp_val = i16::MAX as f64;
                 }
 
-                let buffer: [u8; 2] = i16_val.to_le_bytes();
+                let buffer: [u8; 2] = (tmp_val as i16).to_le_bytes();
                 //signed 16bit
                 Ok(buffer.to_vec())
             } else if bytes_len == 3 {
-                let i32_val: i32;
-                if f64_val < -1.0 {
-                    i32_val = 0x800000i32 + 1;
-                } else if 1.0 < f64_val {
-                    i32_val = 0x7fffffi32;
-                } else {
-                    i32_val = (f64_val * f64::from(0x7fffffi32)).round() as i32;
+                // Calcurate in 32bit
+                let mut tmp_val = (f64_val * BIT32_WAVE_DIVISOR as f64).round();
+                if tmp_val < i32::MIN as f64 {
+                    tmp_val = i32::MIN as f64;
+                } else if tmp_val > i32::MAX as f64 {
+                    tmp_val = i32::MAX as f64;
                 }
 
-                let buffer: [u8; 4] = i32_val.to_le_bytes();
+                let buffer: [u8; 4] = (tmp_val as i32).to_le_bytes();
                 //signed 24bit
-                Ok(buffer[0..3].to_vec())
+                Ok(buffer[1..4].to_vec())
             } else if bytes_len == 4 {
-                let i32_val: i32;
-                if f64_val < -1.0 {
-                    i32_val = i32::MIN + 1;
-                } else if 1.0 < f64_val {
-                    i32_val = i32::MAX;
-                } else {
-                    i32_val = (f64_val * f64::from(i32::MAX)).round() as i32;
+                let mut tmp_val = (f64_val * BIT32_WAVE_DIVISOR as f64).round();
+                if tmp_val < i32::MIN as f64 {
+                    tmp_val = i32::MIN as f64;
+                } else if tmp_val > i32::MAX as f64 {
+                    tmp_val = i32::MAX as f64;
                 }
 
-                let buffer: [u8; 4] = i32_val.to_le_bytes();
+                let buffer: [u8; 4] = (tmp_val as i32).to_le_bytes();
                 //signed 32bit
                 Ok(buffer.to_vec())
             } else {
