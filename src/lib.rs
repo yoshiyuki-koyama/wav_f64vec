@@ -336,14 +336,14 @@ impl WavFile {
         Ok(chunk_body)
     }
 
-    /// Get audio data. Retrun Value: Vec<Vec<f64>: Outer is channel vec. Inner is data vec.
+    /// Get audio data. Return Value: `Vec<Vec<f64>>`: Outer is channel vec. Inner is data vec.
     pub fn get_audio_for_channel_data_vec(&self) -> Result<(WaveFormat, Vec<Vec<f64>>)> {
         let (wave_format, bytes_data) = self.get_bytes_audio()?;
         let channel_data_vec = Self::to_channel_data_vec(&wave_format, bytes_data)?;
         Ok((wave_format, channel_data_vec))
     }
 
-    /// Get audio data. Retrun Value: Vec<Vec<f64>: Outer is data vec. Inner is channel vec.
+    /// Get audio data. Return Value: `Vec<Vec<f64>>`: Outer is data vec. Inner is channel vec.
     pub fn get_audio_for_data_channel_vec(&self) -> Result<(WaveFormat, Vec<Vec<f64>>)> {
         let (wave_format, bytes_data) = self.get_bytes_audio()?;
         let data_channel_vec = Self::to_data_channel_vec(&wave_format, bytes_data)?;
@@ -430,7 +430,7 @@ impl WavFile {
     }
 
     /// Update audio data (update "fmt" and "data" chunk). If "fmt" or "data" argument chunk do not exist, those chunks are added.
-    /// Parameters: channel_data_vec(Vec<Vec<f64>): Outer is channel vec. Inner is data vec.
+    /// Parameters: channel_data_vec(`Vec<Vec<f64>>`): Outer is channel vec. Inner is data vec.
     pub fn update_audio_for_channel_data_vec(
         &mut self,
         wave_format: &WaveFormat,
@@ -453,7 +453,7 @@ impl WavFile {
     }
 
     /// Update audio data (update "fmt" and "data" chunk). If "fmt" or "data" argument chunk do not exist, those chunks are added.
-    /// Parameters: channel_data_vec(Vec<Vec<f64>): Outer is data vec. Inner is channel vec.
+    /// Parameters: channel_data_vec(`Vec<Vec<f64>>`): Outer is data vec. Inner is channel vec.
     pub fn update_audio_for_data_channel_vec(
         &mut self,
         wave_format: &WaveFormat,
