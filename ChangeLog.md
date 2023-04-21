@@ -1,4 +1,8 @@
 # ChangeLog
+## v0.5.0
+* Fix converting IEEE float 64bit wave (f64vec) to and from 8,16,24 and 32bit Integral wave.
+* Fix bugs.
+* Fix comments for documents.
 ## v0.4.0
 * Remove file extension(.wav) check
 * Relax sampling rate condition.
