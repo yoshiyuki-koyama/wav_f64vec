@@ -37,7 +37,7 @@ const WAVEFORMATEXTENSIBLE_SUBTYPE_IEEE_FLOAT_GUID_LEBYTES: [u8; 16] = [
 
 /// Wave audio format structure.
 #[allow(dead_code)]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct WaveFormat {
     /// Format id.
     pub id: usize,
